@@ -14,23 +14,26 @@ class Settings(BaseSettings):
     port: int = 8000
     workers: int = 4
     
-    # Database
-    neo4j_uri: str = "bolt://localhost:7687"
+    # Neo4j Aura (Cloud Knowledge Graph)
+    neo4j_uri: str = "neo4j+s://your-neo4j-instance.databases.neo4j.io"  # Neo4j Aura URI
     neo4j_user: str = "neo4j"
-    neo4j_password: str = "password"
+    neo4j_password: str = ""  # Set via environment variable
     neo4j_database: str = "neo4j"
     
-    # Vector Database
-    weaviate_url: str = "http://localhost:8080"
-    weaviate_api_key: str = ""
-    faiss_index_path: str = "./data/faiss_index"
+    # Milvus Cloud (Vector Database)
+    milvus_host: str = ""  # Milvus cloud endpoint
+    milvus_port: str = "19530"
+    milvus_user: str = ""  # Milvus cloud username
+    milvus_password: str = ""  # Milvus cloud password
+    milvus_secure: bool = True
+    milvus_collection_name: str = "bionexus_embeddings"
     
-    # Object Storage
-    minio_endpoint: str = "localhost:9000"
-    minio_access_key: str = "minioadmin"
-    minio_secret_key: str = "minioadmin"
-    minio_bucket_name: str = "bionexus"
-    minio_secure: bool = False
+    # Google Cloud Storage (Object Storage)
+    gcs_bucket_name: str = "bionexus-documents"
+    gcs_credentials_path: str = ""  # Path to service account JSON
+    gcs_project_id: str = ""
+    
+
     
     # ML Models
     huggingface_api_key: str = ""
@@ -38,8 +41,15 @@ class Settings(BaseSettings):
     spacy_model: str = "en_ner_bionlp13cg_md"
     device: str = "auto"
     
-    # CORS
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:3001"]
+    # CORS (Updated for Cloud Deployment)
+    cors_origins: List[str] = [
+        "http://localhost:3000", 
+        "http://localhost:3001",
+        "https://app.bionexus.space",
+        "https://bionexus.space",
+        "https://*.run.app",  # Google Cloud Run domains
+        "https://*.googleusercontent.com"  # Google Cloud domains
+    ]
     
     # File Processing
     max_upload_size: int = 100_000_000  # 100MB
@@ -55,9 +65,13 @@ class Settings(BaseSettings):
     secret_key: str = "your-secret-key-change-this-in-production"
     access_token_expire_minutes: int = 30
     
-    # Cache
-    redis_url: str = "redis://localhost:6379"
+    # Google Cloud Memorystore (Redis)
+    redis_url: str = "redis://10.0.0.1:6379"  # Internal GCP Redis instance
     cache_ttl: int = 3600
+    
+    # Cloud Environment
+    cloud_environment: str = "gcp"  # gcp, aws, azure
+    environment: str = "production"  # development, staging, production
     
     # Monitoring
     enable_metrics: bool = True

@@ -56,12 +56,13 @@ graph TB
     B --> D[ColPali Embeddings]
     B --> E[Biomedical NER]
     
-    C --> F[Neo4j Knowledge Graph]
-    D --> G[Vector Database]
+    C --> F[Neo4j Aura Cloud]
+    D --> G[Milvus Cloud]
     E --> F
     
     F --> H[FastAPI Backend]
     G --> H
+    N[Google Cloud Storage] --> H
     
     H --> I[Next.js Frontend]
     I --> J[BioNexus Dashboard]
@@ -69,19 +70,28 @@ graph TB
     K[Mission Planner] --> H
     L[Export System] --> H
     
+    M[Google Cloud Platform] --> F
+    M --> G  
+    M --> N
+    M --> H
+    M --> I
+    
     style A fill:#03045e,color:#fff
     style F fill:#0077b6,color:#fff  
+    style G fill:#0077b6,color:#fff
+    style N fill:#0077b6,color:#fff
     style H fill:#00b4d8,color:#fff
     style I fill:#90e0ef,color:#000
     style J fill:#caf0f8,color:#000
+    style M fill:#34a853,color:#fff
 ```
 
 ### Technology Stack
 
 **Backend** 🔧
 - **FastAPI**: High-performance Python web framework
-- **Neo4j 5.x**: Graph database for knowledge representation  
-- **Weaviate/FAISS**: Vector similarity search
+- **Neo4j Aura**: Cloud knowledge graph database
+- **Milvus Cloud**: Scalable vector similarity search
 - **SciSpacy**: Biomedical NLP pipeline
 - **ColPali**: Multimodal document embeddings
 - **Tesseract OCR**: Document text extraction
@@ -93,61 +103,83 @@ graph TB
 - **Cytoscape.js**: Graph visualization
 - **React Query**: Data fetching and caching
 
-**Infrastructure** 🏭
+**Cloud Infrastructure** �
+- **Google Cloud Platform**: Scalable cloud infrastructure
+- **Google Cloud Storage**: Object storage for documents
 - **Docker & Docker Compose**: Containerized deployment
-- **MinIO**: S3-compatible object storage
+- **Terraform**: Infrastructure as Code
 - **GitHub Actions**: CI/CD pipeline
-- **pytest**: Comprehensive testing suite
 
-## 📦 Installation
+## 📦 Cloud-First Installation
+
+BioNexus is designed for cloud deployment with **Neo4j Aura**, **Milvus Cloud**, and **Google Cloud Platform**.
 
 ### Prerequisites
 
-- Docker & Docker Compose
-- Python 3.10+
-- Node.js 18+
-- Git
+- **Cloud Services** (Required):
+  - Neo4j Aura account (knowledge graph)
+  - Zilliz Cloud account (vector database)
+  - Google Cloud Platform project
+  - OpenAI API key
+- **Local Development**:
+  - Docker & Docker Compose  
+  - Python 3.10+
+  - Node.js 18+
+  - Git
 
-### Quick Start
+### 🚀 Quick Cloud Setup
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/username/bionexus.git
+git clone https://github.com/CypherKingdom/bionexus.git
 cd bionexus
 ```
 
-2. **Environment setup**
+2. **Set up cloud services**
 ```bash
-# Copy environment template
+# Follow the comprehensive setup guide
+cat CLOUD_SETUP_GUIDE.md
+
+# Key services to set up:
+# - Neo4j Aura: https://neo4j.com/aura/
+# - Milvus Cloud: https://zilliz.com/cloud  
+# - Google Cloud: https://console.cloud.google.com/
+# - OpenAI API: https://platform.openai.com/
+```
+
+3. **Configure environment**
+```bash
+# Copy and customize environment template
 cp .env.example .env
 
-# Edit configuration (Neo4j credentials, API keys, etc.)
+# Add your cloud credentials:
+# - NEO4J_URI=neo4j+s://xxx.databases.neo4j.io
+# - MILVUS_HOST=xxx.milvusdb.io
+# - OPENAI_API_KEY=sk-proj-xxx
+# - GCS_PROJECT_ID=your-project
 nano .env
 ```
 
-3. **Launch with Docker**
+4. **Test cloud connectivity**
 ```bash
-# Start all services
+# Verify all cloud services are accessible
+./test-cloud-services.sh
+```
+
+5. **Deploy to cloud**
+```bash
+# Deploy to Google Cloud Platform
+./cloud-deployment/deploy.sh your-project-id us-central1 yourdomain.com
+
+# Or run locally with cloud services
 docker-compose up -d
-
-# Monitor logs
-docker-compose logs -f
 ```
 
-4. **Initialize the database**
-```bash
-# Run Cypher setup script
-docker-compose exec neo4j cypher-shell -u neo4j -p password -f /setup/cypher_setup.cypher
-
-# Create sample data
-./scripts/create_sample_data.sh
-```
-
-5. **Access the application**
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **Neo4j Browser**: http://localhost:7474
-- **API Documentation**: http://localhost:8000/docs
+6. **Access your application**
+- **Production**: https://app.yourdomain.com
+- **API**: https://api.yourdomain.com
+- **Documentation**: https://api.yourdomain.com/docs
+- **Local**: http://localhost:3000
 
 ### Manual Installation
 
@@ -350,29 +382,35 @@ pytest test_e2e.py -v
 Create a `.env` file in the root directory:
 
 ```bash
-# Database Configuration
-NEO4J_URI=bolt://localhost:7687
+# Neo4j Aura Cloud Database
+NEO4J_URI=neo4j+s://your-instance.databases.neo4j.io
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=your_secure_password
+NEO4J_PASSWORD=your_aura_password
 
-# Vector Database
-WEAVIATE_URL=http://localhost:8080
-WEAVIATE_API_KEY=optional_api_key
+# Milvus Cloud Vector Database
+MILVUS_HOST=your-endpoint.milvusdb.io
+MILVUS_USER=your_milvus_username
+MILVUS_PASSWORD=your_milvus_password
 
-# Object Storage  
-MINIO_ENDPOINT=localhost:9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
+# Google Cloud Storage
+GCS_PROJECT_ID=your-gcp-project
+GCS_BUCKET_NAME=bionexus-documents
+
+# External APIs
+OPENAI_API_KEY=sk-proj-your-openai-key
+HUGGINGFACE_API_KEY=hf_your-huggingface-token
 
 # ML Models
-HUGGINGFACE_API_KEY=your_hf_token
 COLPALI_MODEL=vidore/colpali-v1.3-hf
+SPACY_MODEL=en_ner_bionlp13cg_md
 
 # Application Settings
+ENVIRONMENT=production
+CLOUD_ENVIRONMENT=gcp
 DEBUG=false
 LOG_LEVEL=INFO
-MAX_UPLOAD_SIZE=100MB
-CORS_ORIGINS=["http://localhost:3000"]
+MAX_UPLOAD_SIZE=100000000
+CORS_ORIGINS=["https://app.bionexus.space","http://localhost:3000"]
 ```
 
 ### Advanced Configuration

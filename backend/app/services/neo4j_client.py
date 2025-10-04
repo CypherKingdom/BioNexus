@@ -17,16 +17,38 @@ class Neo4jClient:
         self.connect()
 
     def connect(self):
-        """Establish connection to Neo4j database."""
+        """Establish connection to Neo4j Aura database."""
         try:
-            self.driver = GraphDatabase.driver(
-                self.uri, 
-                auth=(self.user, self.password)
-            )
-            logger.info("Connected to Neo4j database")
+            # Configure connection for Neo4j Aura with TLS
+            if self.uri.startswith("neo4j+s://"):
+                # Neo4j Aura connection with SSL
+                self.driver = GraphDatabase.driver(
+                    self.uri,
+                    auth=(self.user, self.password),
+                    encrypted=True,
+                    trust=True,
+                    max_connection_lifetime=30 * 60,  # 30 minutes
+                    max_connection_pool_size=50,
+                    connection_acquisition_timeout=60  # 60 seconds
+                )
+            else:
+                # Fallback for local development
+                self.driver = GraphDatabase.driver(
+                    self.uri, 
+                    auth=(self.user, self.password)
+                )
+            
+            # Test connection
+            with self.driver.session() as session:
+                result = session.run("RETURN 1 as test")
+                result.single()
+                
+            logger.info(f"Connected to Neo4j database at {self.uri}")
         except Exception as e:
             logger.error(f"Failed to connect to Neo4j: {e}")
-            raise
+            # Don't raise in production - allow graceful degradation
+            if settings.environment == "development":
+                raise
 
     def close(self):
         """Close the connection to Neo4j."""

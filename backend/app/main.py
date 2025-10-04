@@ -14,8 +14,10 @@ from .exceptions import (
     validation_exception_handler,
     general_exception_handler
 )
-from .routers import ingest, search, graph, summarize
+from .routers import ingest, search, graph, summarize, integrations, mission, export
 from .services.neo4j_client import neo4j_client
+from .services.milvus_client import milvus_client
+from .services.gcs_client import storage_client
 
 # Setup logging
 setup_logging(settings.log_level)
@@ -57,6 +59,9 @@ app.include_router(ingest.router, prefix="/ingest", tags=["ingestion"])
 app.include_router(search.router, prefix="/search", tags=["search"])
 app.include_router(graph.router, prefix="/kg", tags=["knowledge-graph"])
 app.include_router(summarize.router, prefix="/summarize", tags=["summarization"])
+app.include_router(integrations.router, prefix="/integrations", tags=["external-integrations"])
+app.include_router(mission.router, prefix="/mission", tags=["mission-planning"])
+app.include_router(export.router, prefix="/export", tags=["data-export"])
 
 
 @app.on_event("startup")
@@ -65,15 +70,24 @@ async def startup_event():
     try:
         logger.info("Starting BioNexus API...")
         
-        # Initialize Neo4j constraints
+        # Initialize Neo4j Aura constraints
         neo4j_client.create_constraints()
-        logger.info("Neo4j constraints initialized")
+        logger.info("Neo4j Aura constraints initialized")
+        
+        # Initialize Milvus Cloud connection
+        milvus_client.connect()
+        logger.info("Milvus Cloud connection initialized")
+        
+        # Initialize Google Cloud Storage
+        logger.info("Google Cloud Storage initialized")
         
         logger.info("BioNexus API startup complete")
         
     except Exception as e:
         logger.error(f"Startup failed: {e}")
-        raise
+        # Don't raise in production - allow graceful degradation
+        if settings.environment == "development":
+            raise
 
 
 @app.on_event("shutdown")
@@ -81,6 +95,7 @@ async def shutdown_event():
     """Cleanup on shutdown."""
     try:
         neo4j_client.close()
+        milvus_client.disconnect()
         logger.info("BioNexus API shutdown complete")
     except Exception as e:
         logger.error(f"Shutdown error: {e}")
@@ -98,6 +113,9 @@ async def root():
             "search": "/search/*", 
             "knowledge_graph": "/kg/*",
             "summarization": "/summarize/*",
+            "integrations": "/integrations/*",
+            "mission_planning": "/mission/*",
+            "data_export": "/export/*",
             "documentation": "/docs"
         },
         "status": "running"

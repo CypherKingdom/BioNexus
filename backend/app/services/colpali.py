@@ -1,18 +1,40 @@
-import torch
-from transformers import AutoProcessor, AutoModel
+try:
+    import torch
+    from transformers import AutoProcessor, AutoModel
+    from sentence_transformers import SentenceTransformer
+    import faiss
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    torch = None
+    AutoProcessor = None
+    AutoModel = None
+    SentenceTransformer = None
+    faiss = None
+
 from PIL import Image
 import numpy as np
 from typing import List, Union
 import logging
 import os
-from sentence_transformers import SentenceTransformer
-import faiss
 
 logger = logging.getLogger(__name__)
 
 
 class ColPaliService:
     def __init__(self, fallback_to_cpu: bool = True):
+        if not TORCH_AVAILABLE:
+            logger.warning("Torch and transformers not available. ColPali service will be disabled.")
+            self.enabled = False
+            self.device = "cpu"
+            self.fallback_to_cpu = fallback_to_cpu
+            self.model = None
+            self.processor = None
+            self.fallback_model = None
+            self.embedding_dim = 384  # Default embedding dimension
+            return
+        
+        self.enabled = True
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.fallback_to_cpu = fallback_to_cpu
         self.model = None
@@ -45,6 +67,10 @@ class ColPaliService:
     
     def encode_image_and_text(self, image: Image.Image, text: str) -> np.ndarray:
         """Generate multimodal embeddings for image and text."""
+        if not self.enabled:
+            logger.warning("ColPali service is disabled - returning zero embedding")
+            return np.zeros(self.embedding_dim).astype(np.float32)
+            
         if self.model is not None:
             return self._encode_with_colpali(image, text)
         elif self.fallback_model is not None:
@@ -92,6 +118,10 @@ class ColPaliService:
     
     def encode_query(self, query: str) -> np.ndarray:
         """Encode text query for semantic search."""
+        if not self.enabled:
+            logger.warning("ColPali service is disabled - returning zero embedding")
+            return np.zeros(self.embedding_dim).astype(np.float32)
+            
         if self.model is not None:
             # For ColPali, we can encode text-only queries
             try:
@@ -155,12 +185,18 @@ class VectorSearchService:
     def _initialize_index(self):
         """Initialize FAISS index for vector search."""
         try:
+            if faiss is None:
+                logger.warning("FAISS not available - using stub index")
+                self.index = MockIndex()
+                return
+                
             # Use inner product for cosine similarity with normalized vectors
             self.index = faiss.IndexFlatIP(self.embedding_dim)
             logger.info(f"Initialized FAISS index with dimension {self.embedding_dim}")
         except Exception as e:
             logger.error(f"Failed to initialize FAISS index: {e}")
-            raise
+            # Use mock index as fallback
+            self.index = MockIndex()
     
     def add_embeddings(self, embeddings: List[np.ndarray], metadata: List[dict]):
         """Add embeddings to the search index."""
@@ -224,6 +260,39 @@ class VectorSearchService:
             logger.info(f"Loaded FAISS index from {filepath}")
         except Exception as e:
             logger.error(f"Failed to load index: {e}")
+
+    def encode_images_stub(self, images: List[Image.Image]) -> List[np.ndarray]:
+        """Stub method when service is disabled."""
+        if not self.enabled:
+            logger.warning("ColPali service is disabled - returning empty embeddings")
+            return [np.zeros((1, self.embedding_dim)) for _ in images]
+        return []
+    
+    def encode_text_stub(self, texts: List[str]) -> List[np.ndarray]:
+        """Stub method when service is disabled.""" 
+        if not self.enabled:
+            logger.warning("ColPali service is disabled - returning empty embeddings")
+            return [np.zeros((1, self.embedding_dim)) for _ in texts]
+        return []
+
+
+class MockIndex:
+    """Mock FAISS index for when FAISS is not available."""
+    def __init__(self):
+        self.ntotal = 0
+        self.vectors = []
+    
+    def add(self, embeddings):
+        """Mock add method."""
+        if embeddings is not None and len(embeddings) > 0:
+            self.ntotal += len(embeddings)
+            self.vectors.extend(embeddings)
+    
+    def search(self, query, k):
+        """Mock search method - returns empty results."""
+        scores = np.array([[-1.0] * k])
+        indices = np.array([[-1] * k])
+        return scores, indices
 
 
 # Global service instances

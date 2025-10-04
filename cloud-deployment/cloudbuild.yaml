@@ -1,0 +1,92 @@
+# Cloud Build Configuration for BioNexus
+steps:
+  # Build Backend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/bionexus-backend:$BUILD_ID',
+      '-t', 'gcr.io/$PROJECT_ID/bionexus-backend:latest',
+      '-f', 'cloud-deployment/docker/Dockerfile.backend',
+      './backend'
+    ]
+    id: 'build-backend'
+
+  # Build Frontend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'gcr.io/$PROJECT_ID/bionexus-frontend:$BUILD_ID',
+      '-t', 'gcr.io/$PROJECT_ID/bionexus-frontend:latest',
+      '-f', 'cloud-deployment/docker/Dockerfile.frontend',
+      './frontend'
+    ]
+    id: 'build-frontend'
+
+  # Push Backend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/bionexus-backend:$BUILD_ID']
+    id: 'push-backend'
+    waitFor: ['build-backend']
+
+  # Push Frontend Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/bionexus-frontend:$BUILD_ID']
+    id: 'push-frontend'
+    waitFor: ['build-frontend']
+
+  # Deploy Backend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', 'bionexus-backend',
+      '--image', 'gcr.io/$PROJECT_ID/bionexus-backend:$BUILD_ID',
+      '--region', 'us-central1',
+      '--platform', 'managed',
+      '--allow-unauthenticated',
+      '--memory', '4Gi',
+      '--cpu', '2',
+      '--max-instances', '100',
+      '--min-instances', '1',
+      '--set-env-vars', 'PROJECT_ID=$PROJECT_ID,ENVIRONMENT=production'
+    ]
+    id: 'deploy-backend'
+    waitFor: ['push-backend']
+
+  # Deploy Frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', 'bionexus-frontend',
+      '--image', 'gcr.io/$PROJECT_ID/bionexus-frontend:$BUILD_ID',
+      '--region', 'us-central1',
+      '--platform', 'managed',
+      '--allow-unauthenticated',
+      '--memory', '2Gi',
+      '--cpu', '1',
+      '--max-instances', '50',
+      '--min-instances', '1'
+    ]
+    id: 'deploy-frontend'
+    waitFor: ['push-frontend']
+
+  # Run Integration Tests
+  - name: 'gcr.io/cloud-builders/curl'
+    args: [
+      '-f',
+      'https://bionexus-backend-hash.run.app/health'
+    ]
+    id: 'health-check'
+    waitFor: ['deploy-backend']
+
+# Build options
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+# Timeout
+timeout: '1200s'
+
+# Substitutions
+substitutions:
+  _SERVICE_NAME: 'bionexus'
+  _REGION: 'us-central1'

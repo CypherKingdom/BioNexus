@@ -1,116 +1,99 @@
 version: '3.8'
 
 services:
-  # Neo4j Database
-  neo4j:
-    image: neo4j:5.15-community
-    container_name: bionexus-neo4j
-    environment:
-      - NEO4J_AUTH=neo4j/password
-      - NEO4J_PLUGINS=["apoc"]
-      - NEO4J_apoc_export_file_enabled=true
-      - NEO4J_apoc_import_file_enabled=true
-    ports:
-      - "7474:7474"  # HTTP
-      - "7687:7687"  # Bolt
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-      - neo4j_import:/var/lib/neo4j/import
-      - ./infra/cypher_setup.cypher:/var/lib/neo4j/import/setup.cypher
-    networks:
-      - bionexus
-
-  # Weaviate Vector Database
-  weaviate:
-    command:
-      - --host
-      - 0.0.0.0
-      - --port
-      - '8080'
-      - --scheme
-      - http
-    image: semitechnologies/weaviate:1.23.1
-    container_name: bionexus-weaviate
-    ports:
-      - "8080:8080"
-    volumes:
-      - weaviate_data:/var/lib/weaviate
-    environment:
-      QUERY_DEFAULTS_LIMIT: 25
-      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
-      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
-      DEFAULT_VECTORIZER_MODULE: 'none'
-      ENABLE_MODULES: 'text2vec-cohere,text2vec-huggingface,text2vec-palm,text2vec-openai,generative-openai,generative-cohere,generative-palm,ref2vec-centroid,reranker-cohere,qna-openai'
-      CLUSTER_HOSTNAME: 'node1'
-    networks:
-      - bionexus
-
-  # MinIO Object Storage
-  minio:
-    image: minio/minio:latest
-    container_name: bionexus-minio
-    command: server /data --console-address ":9001"
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin123
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - bionexus
-
-  # Backend API
+  # Backend API (Cloud-ready)
   backend:
     build: ./backend
-    container_name: bionexus-backend
+    container_name: bionexus-backend-cloud
     environment:
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=password
-      - WEAVIATE_URL=http://weaviate:8080
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin123
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-your-api-key-here}
+      # Neo4j Aura Cloud Database
+      - NEO4J_URI=${NEO4J_URI:-neo4j+s://your-neo4j-instance.databases.neo4j.io}
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      
+      # Milvus Cloud Vector Database  
+      - MILVUS_HOST=${MILVUS_HOST}
+      - MILVUS_PORT=${MILVUS_PORT:-19530}
+      - MILVUS_USER=${MILVUS_USER}
+      - MILVUS_PASSWORD=${MILVUS_PASSWORD}
+      - MILVUS_SECURE=${MILVUS_SECURE:-true}
+      - MILVUS_COLLECTION_NAME=${MILVUS_COLLECTION_NAME:-bionexus_embeddings}
+      
+      # Google Cloud Storage
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-bionexus-documents}
+      - GCS_PROJECT_ID=${GCS_PROJECT_ID}
+      - GCS_CREDENTIALS_PATH=${GCS_CREDENTIALS_PATH}
+      
+      # External APIs
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - METEOMATICS_USERNAME=${METEOMATICS_USERNAME}
+      - METEOMATICS_PASSWORD=${METEOMATICS_PASSWORD}
+      - AZURE_COGNITIVE_KEY=${AZURE_COGNITIVE_KEY}
+      - MIRO_API_KEY=${MIRO_API_KEY}
+      
+      # Application Configuration
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-false}
+      
+      # Cloud Environment
+      - CLOUD_ENVIRONMENT=gcp
+      - CORS_ORIGINS=["https://app.bionexus.space","https://bionexus.space","http://localhost:3000"]
+      
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data
-      - backend_temp:/tmp/bionexus
-    depends_on:
-      - neo4j
-      - weaviate
-      - minio
-    networks:
-      - bionexus
+      # Mount Google Cloud credentials if using file-based auth
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-./gcp-key.json}:/app/gcp-key.json:ro
+      - ./data:/app/data:ro  # Sample data - read only
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Frontend Application
+  # Frontend Application (Cloud-ready)
   frontend:
     build: ./frontend
-    container_name: bionexus-frontend
+    container_name: bionexus-frontend-cloud
     environment:
-      - API_BASE_URL=http://backend:8000
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.bionexus.space}
+      - NEXT_PUBLIC_ENVIRONMENT=${ENVIRONMENT:-production}
+      - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - NEXT_PUBLIC_MIRO_CLIENT_ID=${MIRO_CLIENT_ID}
+      - NODE_ENV=production
     ports:
       - "3000:3000"
     depends_on:
-      - backend
-    networks:
-      - bionexus
+      backend:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache (Optional - can use Google Cloud Memorystore instead)
+  redis:
+    image: redis:7-alpine
+    container_name: bionexus-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
-  neo4j_data:
-  neo4j_logs:
-  neo4j_import:
-  weaviate_data:
-  minio_data:
-  backend_temp:
+  redis_data:
 
 networks:
-  bionexus:
-    driver: bridge
+  default:
+    name: bionexus-cloud

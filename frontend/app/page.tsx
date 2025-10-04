@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { SearchIcon, BookOpenIcon, NetworkIcon, TrendingUpIcon } from 'lucide-react'
+import { SearchIcon, BookOpenIcon, NetworkIcon, TrendingUpIcon, Zap, Database, Brain } from 'lucide-react'
 import Link from 'next/link'
 import { SearchBar } from '@/components/search/SearchBar'
 import { StatsCards } from '@/components/dashboard/StatsCards'
 import { RecentActivity } from '@/components/dashboard/RecentActivity'
 import { TopicTrends } from '@/components/dashboard/TopicTrends'
+import { PipelineVisualization } from '@/components/pipeline/PipelineVisualization'
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -39,6 +40,12 @@ export default function HomePage() {
               <Link href="/mission-planner" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
                 Mission Planner
               </Link>
+              <Link href="/export" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
+                Export
+              </Link>
+              <Link href="/pipeline" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
+                Pipeline
+              </Link>
             </nav>
           </div>
         </div>
@@ -49,12 +56,12 @@ export default function HomePage() {
         <div className="absolute inset-0 gradient-bg opacity-10"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Explore NASA's
-            <span className="text-gradient block">Bioscience Knowledge</span>
+            NASA Bioscience
+            <span className="text-gradient block">Intelligence Pipeline</span>
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Discover insights from 608 NASA bioscience publications through our AI-powered knowledge graph platform. 
-            Search semantically, explore connections, and plan missions with confidence.
+            Complete AI-powered processing pipeline from PDF documents to mission planning. 
+            OCR extraction, multimodal embeddings, biomedical NER, and knowledge graph integration.
           </p>
           
           {/* Main Search */}
@@ -110,6 +117,22 @@ export default function HomePage() {
               </div>
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Pipeline Visualization */}
+      <section className="py-12 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h3 className="text-3xl font-bold text-gray-900 mb-4">
+              Processing Pipeline Architecture
+            </h3>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              From PDF documents to knowledge discovery - see how BioNexus transforms 
+              NASA research through advanced AI and data processing technologies.
+            </p>
+          </div>
+          <PipelineVisualization />
         </div>
       </section>
 

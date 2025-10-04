@@ -1,5 +1,12 @@
-import spacy
-from spacy import displacy
+try:
+    import spacy
+    from spacy import displacy
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+    spacy = None
+    displacy = None
+
 from typing import List, Dict, Set, Tuple
 import logging
 import re
@@ -11,6 +18,13 @@ logger = logging.getLogger(__name__)
 
 class BiomedicalNER:
     def __init__(self):
+        if not SPACY_AVAILABLE:
+            logger.warning("spaCy not available. NER service will be disabled.")
+            self.enabled = False
+            self.nlp = None
+            return
+            
+        self.enabled = True
         self.nlp = None
         self.entity_types = {
             'SPECIES': 'Organism',
@@ -55,6 +69,10 @@ class BiomedicalNER:
     
     def extract_entities(self, text: str, page_id: str = None) -> List[Dict]:
         """Extract biomedical entities from text."""
+        if not self.enabled:
+            logger.warning("NER service is disabled - returning empty entities list")
+            return []
+            
         if not self.nlp:
             return []
         

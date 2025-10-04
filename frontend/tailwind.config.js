@@ -14,7 +14,9 @@ module.exports = {
           700: '#0077b6', // Ocean blue
           500: '#00b4d8', // Bright blue
           300: '#90e0ef', // Light cyan
+          200: '#b3ecf4', // Light blue
           100: '#caf0f8', // Pale cyan
+          50: '#e6f8fc',  // Very pale cyan
         },
         // Additional grays for UI
         gray: {
