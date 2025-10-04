@@ -46,11 +46,10 @@ graph TB
     A[PDF Documents] --> B[Ingestion Pipeline]
     B --> C[OCR Engine]
     B --> D[ColPali Embeddings]
-    B --> E[Biomedical NER]
+    C --> E[Biomedical NER]
     
-    C --> F[Neo4j Aura Cloud]
+    E --> F[Neo4j Aura Cloud]
     D --> G[Milvus Cloud]
-    E --> F
     
     F --> H[FastAPI Backend]
     G --> H
