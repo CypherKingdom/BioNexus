@@ -4,35 +4,21 @@ uvicorn[standard]==0.24.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
 
-# Database
+# Database (Read-Only)
 neo4j==5.15.0
-
-# Document Processing
-pdf2image==1.16.3
-pytesseract==0.3.10
-Pillow>=10.0.0
-
-# NLP and ML
-spacy==3.7.2
-scispacy==0.5.3
-transformers==4.36.0
-torch==2.1.0
-sentence-transformers==2.2.2
-numpy==1.24.3
-
-# Cloud Vector Database
 pymilvus==2.3.4
 
-# Data Processing
-pandas==2.1.4
+# Basic ML for query processing
+numpy==1.24.3
+sentence-transformers==2.2.2
 
 # HTTP and API
 httpx==0.25.2
 python-multipart==0.0.6
 aiofiles==23.2.1
 
-# Google Cloud Services
-google-cloud-storage==2.10.0
+# Data Processing (minimal for export)
+pandas==2.1.4
 google-cloud-secret-manager==2.17.0
 google-oauth2-tool==0.0.3
 

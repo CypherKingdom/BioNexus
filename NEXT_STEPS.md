@@ -1,7 +1,9 @@
 # 🚀 BioNexus Next Steps - Complete Setup Guide
 
 ## Overview
-Your BioNexus platform is **cloud-ready** and needs only **cloud service credentials** to be fully operational. Follow these exact steps to complete the setup.
+Your BioNexus platform is a **read-only application** that consumes pre-processed research data from cloud services. The backend queries existing data from Neo4j Aura (knowledge graph) and Milvus Cloud (vector embeddings) without performing data processing. 
+
+**Prerequisites**: Data must be pre-processed and loaded into Neo4j Aura and Milvus Cloud before running this application.
 
 ---
 
@@ -151,25 +153,29 @@ docker-compose logs frontend
 
 ---
 
-## ✅ Step 5: Upload Real Data
+## ✅ Step 5: Verify Pre-Processed Data
 
-### 5.1 Prepare Your Documents
-- Convert papers to PDF format
-- Organize in folders by topic/category
-- Ensure good OCR quality for scanned documents
+### 5.1 Check Neo4j Aura Data
+- Ensure your Neo4j database contains:
+  - `Publication` nodes (research papers)
+  - `Page` nodes (document pages) 
+  - `Entity` nodes (biomedical entities)
+  - `CONTAINS`, `MENTIONS`, `RELATES_TO` relationships
 
-### 5.2 Upload via API
+### 5.2 Check Milvus Cloud Data
+- Verify your Milvus collection contains:
+  - Document page embeddings (ColPali/multimodal)
+  - Proper metadata (pub_id, page_id, etc.)
+  - Vector dimensions matching your embedding model
+
+### 5.3 Test Data Connectivity
 ```bash
-# Example: Upload documents via API
-curl -X POST "http://localhost:8000/ingest/run" \
-  -H "Content-Type: application/json" \
-  -d '{"mode": "production", "file_paths": ["/path/to/your/papers"]}'
-```
+# Test Neo4j connection and data
+curl -X GET "http://localhost:8000/health"
 
-### 5.3 Upload via Frontend
-1. Go to [http://localhost:3000/pipeline](http://localhost:3000/pipeline)
-2. Use the document upload interface
-3. Monitor ingestion progress
+# Test vector search functionality  
+curl -X GET "http://localhost:8000/search/stats"
+```
 
 ---
 

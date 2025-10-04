@@ -7,7 +7,8 @@ from ..schemas import (
     SemanticSearchRequest, SemanticSearchResponse, SearchResult,
     Publication, Page
 )
-from ..services.colpali import colpali_service, vector_search_service
+from ..services.query_embeddings import query_embedding_service
+from ..services.milvus_client import milvus_client
 from ..services.neo4j_client import neo4j_client
 
 logger = logging.getLogger(__name__)
@@ -25,10 +26,10 @@ async def semantic_search(request: SemanticSearchRequest):
         start_time = time.time()
         
         # Generate query embedding
-        query_embedding = colpali_service.encode_query(request.query)
+        query_embedding = query_embedding_service.encode_query(request.query)
         
         # Perform vector search
-        search_results = vector_search_service.search(
+        search_results = milvus_client.search_similar(
             query_embedding, 
             top_k=request.top_k
         )
@@ -297,7 +298,7 @@ async def get_search_stats():
             "total_publications": stats['publications'],
             "total_pages": stats['pages'],
             "total_entities": stats['entities'],
-            "search_index_size": vector_search_service.index.ntotal if vector_search_service.index else 0
+            "search_index_size": milvus_client.get_collection_stats().get('row_count', 0)
         }
         
     except Exception as e:

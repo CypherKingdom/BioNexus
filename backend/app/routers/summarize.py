@@ -7,7 +7,8 @@ from datetime import datetime
 
 from ..schemas import RAGRequest, RAGResponse, Citation, MissionPlannerRequest, MissionRecommendation
 from ..services.neo4j_client import neo4j_client
-from ..services.colpali import colpali_service, vector_search_service
+from ..services.query_embeddings import query_embedding_service
+from ..services.milvus_client import milvus_client
 
 logger = logging.getLogger(__name__)
 
@@ -179,7 +180,7 @@ def _get_passages_from_publications(pub_ids: List[str], question: str) -> List[d
         
         # Rank by relevance to question using semantic search
         if pages:
-            query_embedding = colpali_service.encode_query(question)
+            query_embedding = query_embedding_service.encode_query(question)
             
             for page in pages:
                 # Calculate similarity (simplified)
@@ -206,8 +207,8 @@ def _get_passages_from_publications(pub_ids: List[str], question: str) -> List[d
 def _get_passages_from_semantic_search(question: str, top_k: int) -> List[dict]:
     """Get relevant passages using semantic search."""
     try:
-        query_embedding = colpali_service.encode_query(question)
-        search_results = vector_search_service.search(query_embedding, top_k)
+        query_embedding = query_embedding_service.encode_query(question)
+        search_results = milvus_client.search_similar(query_embedding, top_k)
         
         passages = []
         for result in search_results:

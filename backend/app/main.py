@@ -14,10 +14,9 @@ from .exceptions import (
     validation_exception_handler,
     general_exception_handler
 )
-from .routers import ingest, search, graph, summarize, integrations, mission, export
+from .routers import search, graph, summarize, integrations, mission, export
 from .services.neo4j_client import neo4j_client
 from .services.milvus_client import milvus_client
-from .services.gcs_client import storage_client
 
 # Setup logging
 setup_logging(settings.log_level)
@@ -26,7 +25,7 @@ logger = get_logger(__name__)
 # Create FastAPI app
 app = FastAPI(
     title="BioNexus API",
-    description="AI-powered knowledge graph platform for NASA bioscience publications",
+    description="Read-only AI-powered knowledge graph platform for NASA bioscience publications",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -37,7 +36,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],  # Only read operations
     allow_headers=["*"],
 )
 
@@ -47,15 +46,7 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
-# Mount static files for images
-static_dir = "/tmp/bionexus"
-if not os.path.exists(static_dir):
-    os.makedirs(static_dir, exist_ok=True)
-
-app.mount("/images", StaticFiles(directory=static_dir), name="images")
-
-# Include routers
-app.include_router(ingest.router, prefix="/ingest", tags=["ingestion"])
+# Include routers (read-only operations only)
 app.include_router(search.router, prefix="/search", tags=["search"])
 app.include_router(graph.router, prefix="/kg", tags=["knowledge-graph"])
 app.include_router(summarize.router, prefix="/summarize", tags=["summarization"])
@@ -66,22 +57,22 @@ app.include_router(export.router, prefix="/export", tags=["data-export"])
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database and services on startup."""
+    """Initialize read-only database connections on startup."""
     try:
-        logger.info("Starting BioNexus API...")
+        logger.info("Starting BioNexus Read-Only API...")
         
-        # Initialize Neo4j Aura constraints
-        neo4j_client.create_constraints()
-        logger.info("Neo4j Aura constraints initialized")
+        # Test Neo4j Aura connection (read-only)
+        test_result = neo4j_client.run_query("RETURN 1 as test LIMIT 1")
+        if test_result:
+            logger.info("Neo4j Aura connection verified")
+        else:
+            logger.warning("Neo4j Aura connection test failed")
         
-        # Initialize Milvus Cloud connection
+        # Test Milvus Cloud connection (read-only)
         milvus_client.connect()
-        logger.info("Milvus Cloud connection initialized")
+        logger.info("Milvus Cloud connection verified")
         
-        # Initialize Google Cloud Storage
-        logger.info("Google Cloud Storage initialized")
-        
-        logger.info("BioNexus API startup complete")
+        logger.info("BioNexus Read-Only API startup complete")
         
     except Exception as e:
         logger.error(f"Startup failed: {e}")
@@ -105,11 +96,11 @@ async def shutdown_event():
 async def root():
     """Root endpoint with API information."""
     return {
-        "name": "BioNexus API",
+        "name": "BioNexus Read-Only API",
         "version": "1.0.0",
-        "description": "AI-powered knowledge graph platform for NASA bioscience publications",
+        "description": "Read-only AI-powered knowledge graph platform for pre-processed NASA bioscience publications",
+        "data_source": "Pre-processed data from Neo4j Aura and Milvus Cloud",
         "endpoints": {
-            "ingestion": "/ingest/*",
             "search": "/search/*", 
             "knowledge_graph": "/kg/*",
             "summarization": "/summarize/*",
@@ -118,7 +109,8 @@ async def root():
             "data_export": "/export/*",
             "documentation": "/docs"
         },
-        "status": "running"
+        "status": "running",
+        "mode": "read_only"
     }
 
 

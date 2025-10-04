@@ -32,36 +32,36 @@ interface PipelineStep {
 }
 
 export const PipelineVisualization: React.FC = () => {
-  const [activeStep, setActiveStep] = useState<string>('ingestion')
+  const [activeStep, setActiveStep] = useState<string>('neo4j')
   
   const pipelineSteps: PipelineStep[] = [
     {
-      id: 'documents',
-      name: 'PDF Documents',
-      icon: <FileText className="w-6 h-6" />,
+      id: 'neo4j',
+      name: 'Neo4j Knowledge Graph',
+      icon: <Database className="w-6 h-6" />,
       status: 'completed',
-      description: 'NASA bioscience publication collection',
+      description: 'Pre-processed knowledge graph data',
       details: [
-        '608 peer-reviewed publications',
-        'Life sciences research papers',
-        'Mission-critical biological studies',
-        'Multi-format document support'
+        '608 publications processed',
+        'Biomedical entities extracted',
+        'Research relationships mapped',
+        'Multi-level entity connections'
       ],
-      color: 'bg-[#03045e] text-white'
+      color: 'bg-[#0077b6] text-white'
     },
     {
-      id: 'ingestion',
-      name: 'Ingestion Pipeline',
-      icon: <Zap className="w-6 h-6" />,
-      status: 'running',
-      description: 'Document processing and extraction pipeline',
+      id: 'milvus',
+      name: 'Milvus Vector Database',
+      icon: <Brain className="w-6 h-6" />,
+      status: 'completed',
+      description: 'Pre-computed semantic embeddings',
       details: [
-        'PDF parsing and text extraction',
-        'Image extraction and preprocessing',
-        'Metadata collection',
-        'Quality validation checks'
+        'ColPali multimodal embeddings',
+        'High-dimensional vector search',
+        'Semantic similarity indexing',
+        'Optimized query performance'
       ],
-      color: 'bg-orange-500 text-white'
+      color: 'bg-purple-600 text-white'
     },
     {
       id: 'ocr',
