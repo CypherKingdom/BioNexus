@@ -58,7 +58,6 @@ graph TB
     H --> I[Next.js Frontend]
     I --> J[BioNexus Dashboard]
     
-    K[Mission Planner] --> H
     L[Export System] --> H
     
     M[Google Cloud Platform] --> F
