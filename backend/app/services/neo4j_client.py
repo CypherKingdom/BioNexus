@@ -3,14 +3,16 @@ from neo4j import GraphDatabase
 from typing import List, Dict, Any, Optional
 import logging
 
+from ..config import settings
+
 logger = logging.getLogger(__name__)
 
 
 class Neo4jClient:
     def __init__(self):
-        self.uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
-        self.user = os.getenv("NEO4J_USER", "neo4j")
-        self.password = os.getenv("NEO4J_PASSWORD", "password")
+        self.uri = settings.neo4j_uri
+        self.user = settings.neo4j_user
+        self.password = settings.neo4j_password
         self.driver = None
         self.connect()
 

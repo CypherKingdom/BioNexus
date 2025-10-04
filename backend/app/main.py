@@ -1,18 +1,25 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
 import logging
 import os
 
+from .config import settings
+from .logging_config import setup_logging, get_logger
+from .exceptions import (
+    BioNexusException, 
+    bionexus_exception_handler,
+    http_exception_handler,
+    validation_exception_handler,
+    general_exception_handler
+)
 from .routers import ingest, search, graph, summarize
 from .services.neo4j_client import neo4j_client
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Setup logging
+setup_logging(settings.log_level)
+logger = get_logger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
@@ -26,11 +33,17 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Next.js dev server
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add exception handlers
+app.add_exception_handler(BioNexusException, bionexus_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
 
 # Mount static files for images
 static_dir = "/tmp/bionexus"
