@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![BioNexus Logo](https://img.shields.io/badge/BioNexus-AI%20Knowledge%### **Frontend Interface** 🎨
+### **Frontend Interface** 🎨
 - **Next.js 14**: React-based web framework with TypeScript
 - **Tailwind CSS**: Utility-first responsive styling
 - **HTML5 Canvas**: Custom graph visualization with physics simulation
