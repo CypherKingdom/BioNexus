@@ -31,11 +31,11 @@ export default function HomePage() {
               <Link href="/" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
                 Dashboard
               </Link>
+              <Link href="/knowledge-graph" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
+                Knowledge Graph
+              </Link>
               <Link href="/search" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
                 Search
-              </Link>
-              <Link href="/graph" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
-                Knowledge Graph
               </Link>
               <Link href="/about" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
                 About
@@ -57,11 +57,11 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
             NASA Bioscience
-            <span className="text-gradient block">Intelligence Pipeline</span>
+            <span className="text-gradient block">Knowledge Graph</span>
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Complete AI-powered processing pipeline from PDF documents to knowledge discovery. 
-            OCR extraction, multimodal embeddings, biomedical NER, and knowledge graph integration.
+            Explore connections in NASA bioscience research through an interactive knowledge graph. 
+            Search 4,359 nodes of real data including publications, entities, and relationships.
           </p>
           
           {/* Main Search */}
@@ -73,7 +73,7 @@ export default function HomePage() {
               size="large"
               onSearch={() => {
                 if (searchQuery) {
-                  window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
+                  window.location.href = `/knowledge-graph`
                 }
               }}
             />
@@ -87,32 +87,32 @@ export default function HomePage() {
                   <SearchIcon className="w-6 h-6 text-primary-700 group-hover:text-primary-800" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Semantic Search</h3>
-                  <p className="text-gray-600 text-sm">Find relevant research using natural language</p>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Search Knowledge Graph</h3>
+                  <p className="text-gray-600 text-sm">Find entities and connections in real data</p>
                 </div>
               </div>
             </Link>
             
-            <Link href="/graph" className="card-hover group hover-lift">
+            <Link href="/knowledge-graph" className="card-hover group hover-lift">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-all duration-300 group-hover:scale-110">
                   <NetworkIcon className="w-6 h-6 text-primary-700 group-hover:text-primary-800" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Knowledge Graph</h3>
-                  <p className="text-gray-600 text-sm">Explore connections between research concepts</p>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Interactive Graph</h3>
+                  <p className="text-gray-600 text-sm">Visualize real research connections</p>
                 </div>
               </div>
             </Link>
             
-            <Link href="/export" className="card-hover group hover-lift">
+            <Link href="/search" className="card-hover group hover-lift">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-all duration-300 group-hover:scale-110">
                   <FileText className="w-6 h-6 text-primary-700 group-hover:text-primary-800" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Data Export</h3>
-                  <p className="text-gray-600 text-sm">Export research data in multiple formats</p>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Document Search</h3>
+                  <p className="text-gray-600 text-sm">Search through publication content</p>
                 </div>
               </div>
             </Link>
@@ -156,36 +156,25 @@ export default function HomePage() {
             </div>
           </div>
           
-          {/* Featured Publications */}
+          {/* Real Publications - Show only if data available */}
           <div className="card mt-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Featured Publications</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Recent Publications</h3>
               <Link href="/search" className="btn-outline text-sm">
-                View All
+                Search All
               </Link>
             </div>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Placeholder for featured publications */}
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="border border-gray-200 rounded-lg p-4 hover:border-primary-200 transition-colors">
-                  <div className="flex items-start space-x-3">
-                    <BookOpenIcon className="w-5 h-5 text-primary-500 mt-1 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-medium text-gray-900 line-clamp-2">
-                        Effects of Microgravity on Cellular Function and Gene Expression
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Johnson, M. et al. • 2023
-                      </p>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <span className="entity-organism">Human</span>
-                        <span className="entity-endpoint">Gene Expression</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="text-center py-8 text-gray-500">
+              <BookOpenIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium mb-2">Real Publication Data</p>
+              <p className="text-sm">
+                Use the search functionality to explore actual NASA publications in the database
+              </p>
+              <Link href="/search" className="btn-primary mt-4 inline-flex items-center">
+                <SearchIcon className="w-4 h-4 mr-2" />
+                Start Searching
+              </Link>
             </div>
           </div>
         </div>

@@ -22,26 +22,32 @@ export function StatsCards() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // First try to get real data directly from backend
-        const backendResponse = await fetch('http://localhost:8000/stats')
-        if (backendResponse.ok) {
-          const backendData = await backendResponse.json()
+        // Get real data from search stats endpoint
+        const searchStatsResponse = await fetch('http://localhost:8000/search/stats')
+        if (searchStatsResponse.ok) {
+          const searchData = await searchStatsResponse.json()
           setStats({
-            publications: backendData.publications || 0,
-            pages: backendData.pages || 0, 
-            entities: backendData.entities || 0,
-            searchIndexSize: backendData.searchIndexSize || 0
+            publications: searchData.total_publications || 0,
+            pages: searchData.total_pages || 0, 
+            entities: searchData.total_entities || 0,
+            searchIndexSize: searchData.search_index_size || 0
           })
         } else {
-          // Try Next.js API route as fallback
-          const apiResponse = await fetch('/api/stats')
-          if (apiResponse.ok) {
-            const apiData = await apiResponse.json()
+          // Try graph statistics as fallback
+          const graphStatsResponse = await fetch('http://localhost:8000/graph/statistics')
+          if (graphStatsResponse.ok) {
+            const graphData = await graphStatsResponse.json()
+            const nodeCounts = graphData.graph_statistics?.node_counts || []
+            
+            const pubCount = nodeCounts.find((n: any) => n.label?.[0] === 'Publication')?.count || 0
+            const pageCount = nodeCounts.find((n: any) => n.label?.[0] === 'Page')?.count || 0  
+            const entityCount = nodeCounts.find((n: any) => n.label?.[0] === 'Entity')?.count || 0
+            
             setStats({
-              publications: apiData.publications || 0,
-              pages: apiData.pages || 0,
-              entities: apiData.entities || 0, 
-              searchIndexSize: apiData.searchIndexSize || 0
+              publications: pubCount,
+              pages: pageCount,
+              entities: entityCount,
+              searchIndexSize: 0  // No search index data from graph endpoint
             })
           } else {
             // Set to zero if no data available - NO FAKE NUMBERS

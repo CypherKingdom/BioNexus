@@ -18,52 +18,34 @@ export function RecentActivity() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate fetching recent activity
+    // Fetch real recent publications from Neo4j
     const fetchActivity = async () => {
-      await new Promise(resolve => setTimeout(resolve, 800))
-      
-      const mockActivities: ActivityItem[] = [
-        {
-          id: '1',
-          title: 'Microgravity Effects on Bone Density',
-          type: 'publication',
-          description: 'New publication added to the knowledge graph with 12 extracted entities',
-          timestamp: '2 hours ago',
-          url: '/publication/pub_12345'
-        },
-        {
-          id: '2',
-          title: 'Cardiovascular Adaptation Research',
-          type: 'discovery',
-          description: 'AI discovered new connections between space flight duration and heart rate variability',
-          timestamp: '4 hours ago'
-        },
-        {
-          id: '3',
-          title: 'Plant Growth Experiments',
-          type: 'search',
-          description: 'Popular search query leading to 23 relevant publications',
-          timestamp: '6 hours ago'
-        },
-        {
-          id: '4',
-          title: 'Radiation Exposure Studies',
-          type: 'publication',
-          description: 'Updated publication with new experimental data and findings',
-          timestamp: '1 day ago',
-          url: '/publication/pub_67890'
-        },
-        {
-          id: '5',
-          title: 'Neural Adaptation Mechanisms',
-          type: 'discovery',
-          description: 'Knowledge graph expansion revealed novel relationships between neural pathways',
-          timestamp: '2 days ago'
+      try {
+        // Get recent publications from search endpoint
+        const response = await fetch('http://localhost:8000/search/semantic?query=recent&top_k=5')
+        if (response.ok) {
+          const data = await response.json()
+          const recentActivities: ActivityItem[] = data.results.slice(0, 5).map((result: any, index: number) => ({
+            id: result.id || `activity_${index}`,
+            title: result.title || 'Unknown Publication',
+            type: 'publication' as const,
+            description: `Publication with ${result.entities?.length || 0} entities: ${result.entities?.slice(0, 2).join(', ') || 'No entities'}`,
+            timestamp: result.year ? `Year ${result.year}` : 'Unknown date',
+            url: `/search?q=${encodeURIComponent(result.title || '')}`
+          }))
+          
+          setActivities(recentActivities.length > 0 ? recentActivities : [])
+        } else {
+          // No data available - show empty state
+          setActivities([])
         }
-      ]
-      
-      setActivities(mockActivities)
-      setLoading(false)
+      } catch (error) {
+        console.error('Failed to fetch recent activity:', error)
+        // No fake data - show empty state
+        setActivities([])
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchActivity()

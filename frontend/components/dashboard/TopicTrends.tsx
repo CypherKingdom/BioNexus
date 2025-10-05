@@ -16,23 +16,33 @@ export function TopicTrends() {
   const [viewMode, setViewMode] = useState<'chart' | 'list'>('chart')
 
   useEffect(() => {
-    // Simulate fetching topic trends
+    // Fetch real entity type counts from Neo4j
     const fetchTopics = async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const mockTopics: TopicData[] = [
-        { topic: 'Microgravity Effects', publications: 156, growth: 12.5, trend: 'up' },
-        { topic: 'Radiation Exposure', publications: 142, growth: 8.2, trend: 'up' },
-        { topic: 'Cardiovascular Adaptation', publications: 98, growth: -2.1, trend: 'down' },
-        { topic: 'Bone Density', publications: 87, growth: 15.3, trend: 'up' },
-        { topic: 'Plant Growth', publications: 72, growth: 5.7, trend: 'up' },
-        { topic: 'Neural Function', publications: 64, growth: 0.8, trend: 'stable' },
-        { topic: 'Sleep Patterns', publications: 45, growth: 22.1, trend: 'up' },
-        { topic: 'Muscle Atrophy', publications: 38, growth: -5.3, trend: 'down' }
-      ]
-      
-      setTopics(mockTopics)
-      setLoading(false)
+      try {
+        const response = await fetch('http://localhost:8000/graph/statistics')
+        if (response.ok) {
+          const data = await response.json()
+          const entityTypeCounts = data.graph_statistics?.entity_type_counts || []
+          
+          const realTopics: TopicData[] = entityTypeCounts.slice(0, 8).map((item: any) => ({
+            topic: item.entity_type || 'Unknown',
+            publications: item.count || 0,
+            growth: 0, // Can't calculate growth without historical data
+            trend: 'stable' as const
+          }))
+          
+          setTopics(realTopics.length > 0 ? realTopics : [])
+        } else {
+          // No data available
+          setTopics([])
+        }
+      } catch (error) {
+        console.error('Failed to fetch topic trends:', error)
+        // No fake data - show empty state
+        setTopics([])
+      } finally {
+        setLoading(false)
+      }
     }
 
     fetchTopics()

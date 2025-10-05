@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { SearchIcon, FilterIcon, BookOpenIcon, TagIcon, CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
 import { SearchBar } from '@/components/search/SearchBar'
+import { ErrorBoundary, safeRender, validateForReact } from '@/components/ErrorBoundary'
 
 interface SearchResult {
   id: string
@@ -47,8 +48,69 @@ export default function SearchPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setResults(data.results || [])
-        setTotalResults(data.total_results || 0)
+        
+        // Validate the data structure before processing
+        try {
+          validateForReact(data, 'searchResponse')
+        } catch (error) {
+          console.error('Search response validation failed:', error)
+          setError('Invalid data structure received from server')
+          return
+        }
+        
+        // Clean the results to ensure all fields are properly serialized
+        const cleanResults = (data.results || []).map((result: any) => {
+          // Clean entities array
+          const cleanEntities: string[] = []
+          if (Array.isArray(result.entities)) {
+            result.entities.forEach((entity: any) => {
+              try {
+                if (typeof entity === 'string') {
+                  cleanEntities.push(entity)
+                } else if (entity && typeof entity === 'object') {
+                  const entityStr = (entity as any).text || (entity as any).name || (entity as any).type || 'Entity'
+                  cleanEntities.push(String(entityStr))
+                } else {
+                  cleanEntities.push(String(entity || 'Entity'))
+                }
+              } catch (e) {
+                cleanEntities.push('Entity')
+              }
+            })
+          }
+          
+          // Clean authors array
+          const cleanAuthors: string[] = []
+          if (Array.isArray(result.authors)) {
+            result.authors.forEach((author: any) => {
+              try {
+                if (typeof author === 'string') {
+                  cleanAuthors.push(author)
+                } else if (author && typeof author === 'object') {
+                  cleanAuthors.push(String((author as any).name || 'Unknown Author'))
+                } else {
+                  cleanAuthors.push(String(author || 'Unknown Author'))
+                }
+              } catch (e) {
+                cleanAuthors.push('Unknown Author')
+              }
+            })
+          }
+          
+          return {
+            id: String(result.id || ''),
+            title: String(result.title || 'Untitled'),
+            authors: cleanAuthors,
+            year: Number(result.year) || new Date().getFullYear(),
+            abstract: String(result.abstract || ''),
+            score: Number(result.score) || 0,
+            entities: cleanEntities,
+            pub_id: String(result.pub_id || result.id || '')
+          }
+        })
+        
+        setResults(cleanResults)
+        setTotalResults(Number(data.total_results) || 0)
       } else {
         setError('Search service unavailable')
         setResults([])
@@ -88,8 +150,7 @@ export default function SearchPage() {
             </Link>
             <nav className="hidden md:flex space-x-6">
               <Link href="/" className="text-gray-600 hover:text-primary-700 transition-colors">Home</Link>
-              <Link href="/graph" className="text-gray-600 hover:text-primary-700 transition-colors">Knowledge Graph</Link>
-              <Link href="/export" className="text-gray-600 hover:text-primary-700 transition-colors">Export</Link>
+              <Link href="/knowledge-graph" className="text-gray-600 hover:text-primary-700 transition-colors">Knowledge Graph</Link>
             </nav>
           </div>
         </div>
@@ -202,18 +263,31 @@ export default function SearchPage() {
 
             {/* Results List */}
             <div className="space-y-4">
-              {results.map((result, index) => (
+              {results.map((result, index) => {
+                // Ensure result is properly serialized
+                const safeResult = {
+                  id: safeRender(result?.id || index),
+                  title: safeRender(result?.title || 'Untitled Publication'),
+                  authors: Array.isArray(result?.authors) ? result.authors.map(a => safeRender(a || 'Unknown')) : [],
+                  year: Number(result?.year) || new Date().getFullYear(),
+                  abstract: safeRender(result?.abstract || ''),
+                  score: Number(result?.score) || 0,
+                  entities: Array.isArray(result?.entities) ? result.entities.map(e => safeRender(e || 'Entity')) : [],
+                  pub_id: safeRender(result?.pub_id || result?.id || 'unknown')
+                };
+                
+                return (
+                <ErrorBoundary key={safeResult.id}>
                 <div
-                  key={result.id || index}
                   className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md hover:border-primary-200 transition-all duration-200"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <h4 className="text-lg font-semibold text-gray-900 hover:text-primary-700 cursor-pointer line-clamp-2">
-                      {result.title || 'Untitled Publication'}
+                      {safeResult.title}
                     </h4>
                     <div className="ml-4 flex-shrink-0">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                        {Math.round((result.score || 0) * 100)}% match
+                        {Math.round(safeResult.score * 100)}% match
                       </span>
                     </div>
                   </div>
@@ -221,26 +295,27 @@ export default function SearchPage() {
                   <div className="flex items-center text-sm text-gray-600 mb-3 space-x-4">
                     <span className="flex items-center gap-1">
                       <BookOpenIcon className="w-4 h-4" />
-                      {result.authors?.length ? result.authors.slice(0, 3).join(', ') : 'Unknown authors'}
-                      {result.authors?.length > 3 && ` +${result.authors.length - 3} more`}
+                      {safeResult.authors.length > 0 ? 
+                        safeResult.authors.slice(0, 3).join(', ') : 'Unknown authors'}
+                      {safeResult.authors.length > 3 && ` +${safeResult.authors.length - 3} more`}
                     </span>
-                    {result.year && (
+                    {safeResult.year && (
                       <span className="flex items-center gap-1">
                         <CalendarIcon className="w-4 h-4" />
-                        {result.year}
+                        {safeResult.year}
                       </span>
                     )}
                   </div>
 
                   <p className="text-gray-700 text-sm mb-4 line-clamp-3">
-                    {result.abstract || 'No abstract available'}
+                    {safeResult.abstract}
                   </p>
 
-                  {result.entities && result.entities.length > 0 && (
+                  {safeResult.entities.length > 0 && (
                     <div className="flex items-center gap-2 mb-3">
                       <TagIcon className="w-4 h-4 text-gray-400" />
                       <div className="flex flex-wrap gap-1">
-                        {result.entities.slice(0, 5).map((entity, entityIndex) => (
+                        {safeResult.entities.slice(0, 5).map((entity, entityIndex) => (
                           <span
                             key={entityIndex}
                             className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
@@ -248,9 +323,9 @@ export default function SearchPage() {
                             {entity}
                           </span>
                         ))}
-                        {result.entities.length > 5 && (
+                        {safeResult.entities.length > 5 && (
                           <span className="text-xs text-gray-500">
-                            +{result.entities.length - 5} more
+                            +{safeResult.entities.length - 5} more
                           </span>
                         )}
                       </div>
@@ -259,14 +334,16 @@ export default function SearchPage() {
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <span className="text-xs text-gray-500">
-                      ID: {result.pub_id || result.id || 'unknown'}
+                      ID: {safeResult.pub_id}
                     </span>
                     <button className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors">
                       View Details →
                     </button>
                   </div>
                 </div>
-              ))}
+                </ErrorBoundary>
+                );
+              })}
             </div>
 
             {/* Load More */}

@@ -10,6 +10,171 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/explore/filtered")
+async def explore_graph_filtered(
+    node_types: str = None,
+    relationship_types: str = None,
+    min_connections: int = 0,
+    limit: int = 50
+):
+    """
+    Get filtered nodes and relationships for graph exploration.
+    Supports advanced filtering by node types, relationship types, and connectivity.
+    """
+    try:
+        # Parse comma-separated filter parameters
+        node_type_list = [t.strip() for t in node_types.split(',')] if node_types else []
+        rel_type_list = [t.strip() for t in relationship_types.split(',')] if relationship_types else []
+        
+        # Build dynamic query based on filters
+        node_filter = ""
+        if node_type_list:
+            labels = " OR ".join([f"n:{label}" for label in node_type_list])
+            node_filter = f"WHERE {labels}"
+        else:
+            node_filter = "WHERE n:Publication OR n:Entity OR n:Page"
+        
+        # Get nodes with connectivity filtering
+        if min_connections > 0:
+            nodes_query = f"""
+            MATCH (n)-[r]-()
+            {node_filter}
+            WITH n, count(r) as connections
+            WHERE connections >= $min_connections
+            RETURN 
+                id(n) as id,
+                labels(n)[0] as type,
+                CASE 
+                    WHEN n:Publication THEN n.title
+                    WHEN n:Entity THEN n.name
+                    WHEN n:Page THEN 'Page ' + toString(n.page_number)
+                    ELSE 'Unknown'
+                END as label,
+                properties(n) as properties,
+                connections
+            ORDER BY connections DESC
+            LIMIT $limit
+            """
+        else:
+            nodes_query = f"""
+            MATCH (n)
+            {node_filter}
+            RETURN 
+                id(n) as id,
+                labels(n)[0] as type,
+                CASE 
+                    WHEN n:Publication THEN n.title
+                    WHEN n:Entity THEN n.name
+                    WHEN n:Page THEN 'Page ' + toString(n.page_number)
+                    ELSE 'Unknown'
+                END as label,
+                properties(n) as properties
+            LIMIT $limit
+            """
+        
+        nodes_result = neo4j_client.run_query(nodes_query, {
+            "min_connections": min_connections,
+            "limit": limit
+        })
+        
+        # Get node IDs for relationship filtering
+        node_ids = [str(node["id"]) for node in nodes_result]
+        
+        # Build relationship query with filtering
+        rel_filter = ""
+        if rel_type_list:
+            rel_filter = f"AND type(r) IN {rel_type_list}"
+        
+        relationships_query = f"""
+        MATCH (n)-[r]->(m)
+        WHERE id(n) IN $node_ids AND id(m) IN $node_ids {rel_filter}
+        RETURN 
+            id(n) as source,
+            id(m) as target,
+            type(r) as type,
+            properties(r) as properties
+        LIMIT $limit
+        """
+        
+        relationships_result = neo4j_client.run_query(relationships_query, {
+            "node_ids": [int(nid) for nid in node_ids],
+            "limit": limit
+        })
+        
+        # Process results with same cleaning logic as original
+        nodes = []
+        for node_data in nodes_result:
+            raw_properties = node_data["properties"] or {}
+            clean_properties = {}
+            
+            for key, value in raw_properties.items():
+                try:
+                    if value is None:
+                        clean_properties[key] = "N/A"
+                    elif isinstance(value, str):
+                        clean_properties[key] = value
+                    elif isinstance(value, (int, float, bool)):
+                        clean_properties[key] = str(value)
+                    elif isinstance(value, list):
+                        clean_properties[key] = ", ".join(str(item) for item in value if item is not None)
+                    else:
+                        clean_properties[key] = str(value)
+                except Exception:
+                    clean_properties[key] = "Invalid data"
+            
+            nodes.append({
+                "id": str(node_data["id"]),
+                "label": node_data["label"] or "Unknown",
+                "type": node_data["type"] or "Unknown",
+                "properties": clean_properties,
+                "connections": node_data.get("connections", 0)
+            })
+        
+        edges = []
+        for rel_data in relationships_result:
+            raw_properties = rel_data["properties"] or {}
+            clean_properties = {}
+            
+            for key, value in raw_properties.items():
+                try:
+                    if value is None:
+                        clean_properties[key] = "N/A"
+                    elif isinstance(value, str):
+                        clean_properties[key] = value
+                    elif isinstance(value, (int, float, bool)):
+                        clean_properties[key] = str(value)
+                    else:
+                        clean_properties[key] = str(value)
+                except Exception:
+                    clean_properties[key] = "Invalid data"
+            
+            edges.append({
+                "source": str(rel_data["source"]),
+                "target": str(rel_data["target"]),
+                "type": rel_data["type"] or "RELATED",
+                "properties": clean_properties
+            })
+        
+        return {
+            "nodes": nodes,
+            "edges": edges,
+            "metadata": {
+                "total_nodes": len(nodes),
+                "total_edges": len(edges),
+                "filters_applied": {
+                    "node_types": node_type_list,
+                    "relationship_types": rel_type_list,
+                    "min_connections": min_connections
+                },
+                "query_time_ms": 0.0
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Filtered graph exploration failed: {e}")
+        return {"nodes": [], "edges": [], "error": str(e)}
+
+
 @router.get("/explore")
 async def explore_graph(limit: int = 50):
     """
@@ -17,7 +182,7 @@ async def explore_graph(limit: int = 50):
     Returns data suitable for visualization.
     """
     try:
-        # Get nodes with their basic info
+        # Get nodes with their basic info - only real data from Neo4j
         nodes_query = """
         MATCH (n)
         WHERE n:Publication OR n:Entity OR n:Page
@@ -50,30 +215,77 @@ async def explore_graph(limit: int = 50):
         
         relationships_result = neo4j_client.run_query(relationships_query, {"limit": limit})
         
+        # Process nodes
+        nodes = []
+        for node_data in nodes_result:
+            # Clean properties to ensure they're serializable as strings
+            raw_properties = node_data["properties"] or {}
+            clean_properties = {}
+            
+            for key, value in raw_properties.items():
+                try:
+                    if value is None:
+                        clean_properties[key] = "N/A"
+                    elif isinstance(value, str):
+                        clean_properties[key] = value
+                    elif isinstance(value, (int, float, bool)):
+                        clean_properties[key] = str(value)
+                    elif isinstance(value, list):
+                        # Convert list items to strings
+                        clean_properties[key] = ", ".join(str(item) for item in value if item is not None)
+                    else:
+                        # Convert other types to string
+                        clean_properties[key] = str(value)
+                except Exception:
+                    clean_properties[key] = "Invalid data"
+            
+            nodes.append({
+                "id": str(node_data["id"]),
+                "label": node_data["label"] or "Unknown",
+                "type": node_data["type"] or "Unknown",
+                "properties": clean_properties
+            })
+        
+        # Process relationships
+        edges = []
+        for rel_data in relationships_result:
+            # Clean relationship properties too
+            raw_properties = rel_data["properties"] or {}
+            clean_properties = {}
+            
+            for key, value in raw_properties.items():
+                try:
+                    if value is None:
+                        clean_properties[key] = "N/A"
+                    elif isinstance(value, str):
+                        clean_properties[key] = value
+                    elif isinstance(value, (int, float, bool)):
+                        clean_properties[key] = str(value)
+                    else:
+                        clean_properties[key] = str(value)
+                except Exception:
+                    clean_properties[key] = "Invalid data"
+            
+            edges.append({
+                "source": str(rel_data["source"]),
+                "target": str(rel_data["target"]),
+                "type": rel_data["type"] or "RELATED",
+                "properties": clean_properties
+            })
+        
         return {
-            "nodes": [
-                {
-                    "id": str(node["id"]),
-                    "label": node["label"] or "Unknown",
-                    "type": node["type"],
-                    "properties": node["properties"] or {}
-                }
-                for node in nodes_result
-            ],
-            "relationships": [
-                {
-                    "source": str(rel["source"]),
-                    "target": str(rel["target"]),
-                    "type": rel["type"],
-                    "properties": rel["properties"] or {}
-                }
-                for rel in relationships_result
-            ]
+            "nodes": nodes,
+            "edges": edges,
+            "metadata": {
+                "total_nodes": len(nodes),
+                "total_edges": len(edges),
+                "query_time_ms": 0.0  # Would measure in production
+            }
         }
         
     except Exception as e:
         logger.error(f"Graph exploration failed: {e}")
-        return {"nodes": [], "relationships": []}
+        return {"nodes": [], "edges": [], "error": str(e)}
 
 
 @router.get("/search")
@@ -87,7 +299,7 @@ async def search_graph(query: str, limit: int = 30):
         MATCH (n)
         WHERE (n:Publication AND toLower(n.title) CONTAINS toLower($query))
            OR (n:Entity AND toLower(n.name) CONTAINS toLower($query))
-           OR (n:Page AND toLower(n.ocr_text) CONTAINS toLower($query))
+           OR (n:Page AND toLower(n.text) CONTAINS toLower($query))
         WITH n
         MATCH (n)-[r]-(connected)
         RETURN 
@@ -116,11 +328,30 @@ async def search_graph(query: str, limit: int = 30):
             # Add main node
             node_id = str(result["id"])
             if node_id not in nodes:
+                # Clean properties for this node too
+                raw_properties = result["properties"] or {}
+                clean_properties = {}
+                
+                for key, value in raw_properties.items():
+                    try:
+                        if value is None:
+                            clean_properties[key] = "N/A"
+                        elif isinstance(value, str):
+                            clean_properties[key] = value
+                        elif isinstance(value, (int, float, bool)):
+                            clean_properties[key] = str(value)
+                        elif isinstance(value, list):
+                            clean_properties[key] = ", ".join(str(item) for item in value if item is not None)
+                        else:
+                            clean_properties[key] = str(value)
+                    except Exception:
+                        clean_properties[key] = "Invalid data"
+                
                 nodes[node_id] = {
                     "id": node_id,
                     "label": result["label"] or "Unknown",
                     "type": result["type"],
-                    "properties": result["properties"] or {}
+                    "properties": clean_properties
                 }
             
             # Add connected node
@@ -383,6 +614,79 @@ async def get_entity_clusters(
     except Exception as e:
         logger.error(f"Clustering failed: {e}")
         raise HTTPException(status_code=500, detail=f"Clustering failed: {e}")
+
+
+@router.get("/filter-options")
+async def get_filter_options():
+    """Get available options for filtering the knowledge graph."""
+    try:
+        # Get all available node types
+        node_types_query = """
+        MATCH (n)
+        WHERE n:Publication OR n:Entity OR n:Page
+        RETURN DISTINCT labels(n)[0] as node_type, count(n) as count
+        ORDER BY count DESC
+        """
+        
+        # Get all available relationship types
+        rel_types_query = """
+        MATCH ()-[r]->()
+        RETURN DISTINCT type(r) as relationship_type, count(r) as count
+        ORDER BY count DESC
+        """
+        
+        # Get connectivity statistics
+        connectivity_query = """
+        MATCH (n)
+        WHERE n:Publication OR n:Entity OR n:Page
+        OPTIONAL MATCH (n)-[r]-()
+        WITH n, count(r) as connections
+        RETURN 
+            min(connections) as min_connections,
+            max(connections) as max_connections,
+            avg(connections) as avg_connections,
+            percentileCont(connections, 0.5) as median_connections
+        """
+        
+        node_types_result = neo4j_client.run_query(node_types_query)
+        rel_types_result = neo4j_client.run_query(rel_types_query)
+        connectivity_result = neo4j_client.run_query(connectivity_query)
+        
+        return {
+            "node_types": [
+                {
+                    "type": result["node_type"],
+                    "count": result["count"]
+                }
+                for result in node_types_result
+            ],
+            "relationship_types": [
+                {
+                    "type": result["relationship_type"],
+                    "count": result["count"]
+                }
+                for result in rel_types_result
+            ],
+            "connectivity_stats": connectivity_result[0] if connectivity_result else {
+                "min_connections": 0,
+                "max_connections": 0,
+                "avg_connections": 0,
+                "median_connections": 0
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Filter options retrieval failed: {e}")
+        return {
+            "node_types": [],
+            "relationship_types": [],
+            "connectivity_stats": {
+                "min_connections": 0,
+                "max_connections": 0,
+                "avg_connections": 0,
+                "median_connections": 0
+            }
+        }
 
 
 @router.get("/statistics")

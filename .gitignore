@@ -195,7 +195,7 @@ cover/
 # Celery
 celerybeat-schedule
 celerybeat.pid
-
+.env
 # SageMath parsed files
 *.sage.py
 

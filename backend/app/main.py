@@ -57,7 +57,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 # Include routers (read-only operations only)
 app.include_router(search.router, prefix="/search", tags=["search"])
-app.include_router(graph.router, prefix="/kg", tags=["knowledge-graph"])
+app.include_router(graph.router, prefix="/graph", tags=["knowledge-graph"])
 app.include_router(summarize.router, prefix="/summarize", tags=["summarization"])
 # Skip integrations router temporarily - requires optional dependencies
 # app.include_router(integrations.router, prefix="/integrations", tags=["external-integrations"])
@@ -115,7 +115,7 @@ async def root():
         "data_source": "Pre-processed data from Neo4j Aura and Milvus Cloud",
         "endpoints": {
             "search": "/search/*", 
-            "knowledge_graph": "/kg/*",
+            "knowledge_graph": "/graph/*",
             "summarization": "/summarize/*",
             "integrations": "/integrations/*",
 

@@ -1,21 +1,33 @@
-# BioNexus - AI-Powered Knowledge Graph for Biomedical Research
+# 🧬 BioNexus: AI-Powered Biomedical Knowledge Discovery Platform
 
 <div align="center">
 
-![BioNexus Logo](https://img.shields.io/badge/BioNexus-AI%20Knowledge%20Graph-0077b6?style=for-the-badge)
+![BioNexus Logo](https://img.shields.io/badge/BioNexus-AI%20Knowledge%### **Frontend Interface** 🎨
+- **Next.js 14**: React-based web framework with TypeScript
+- **Tailwind CSS**: Utility-first responsive styling
+- **HTML5 Canvas**: Custom graph visualization with physics simulation
+- **Lucide React**: Modern icon system
+- **Real-time Updates**: Live database statistics and search results
 
-**Cloud-native semantic search and knowledge discovery platform for biomedical publications**
+### **Development & Deployment** 🚀
+- **Docker Compose**: Multi-container development environment
+- **Environment Configuration**: Secure credential management with `.env`
+- **RESTful API**: Comprehensive API with automatic documentation
+- **Error Handling**: Robust exception handling and logging6?style=for-the-badge)
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-00b4d8.svg)](https://fastapi.tiangolo.com)
+**Transforming NASA's biomedical research corpus into interactive knowledge graphs for accelerated scientific discovery**
+
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-00b4d8.svg)](https://fastapi.tiangolo.com)
 [![Next.js 14](https://img.shields.io/badge/Next.js-14-90e0ef.svg)](https://nextjs.org)
 [![Neo4j Aura](https://img.shields.io/badge/Neo4j-Aura-caf0f8.svg)](https://neo4j.com)
+[![Milvus Cloud](https://img.shields.io/badge/Milvus-Cloud-ff6b35.svg)](https://milvus.io)
 
 </div>
 
-## 🚀 Overview
+## 🎯 Project Overview
 
-BioNexus transforms biomedical publications into an intelligent, searchable knowledge graph using cloud-native AI services. Using 608 research papers, instantly discover hidden connections, entities, and insights through advanced semantic search.
+BioNexus is an advanced research platform that processes **NASA's biomedical research corpus** (5,800+ publications) into an interactive knowledge graph, enabling researchers to discover hidden connections and patterns through intelligent visualization and semantic search. The platform combines cutting-edge graph databases, vector search, and AI-powered entity recognition to revolutionize biomedical literature exploration.
 
 ### Key Features
 
@@ -78,13 +90,24 @@ graph TB
 
 ### Technology Stack
 
-**Backend** 🔧
-- **FastAPI**: High-performance Python web framework
-- **Neo4j Aura**: Cloud knowledge graph database
-- **Milvus Cloud**: Scalable vector similarity search
-- **SciSpacy**: Biomedical NLP pipeline
-- **ColPali**: Multimodal document embeddings
-- **Tesseract OCR**: Document text extraction
+### **AI & Machine Learning Pipeline** 🤖
+- **ColPali + CLIP**: Multimodal document embeddings (text + visual understanding)
+- **SciSpacy**: Biomedical NER with `en_ner_bionlp13cg_md` model  
+- **PyTorch**: Deep learning framework with CUDA acceleration
+- **Transformers**: Hugging Face transformers for model loading
+- **Tesseract OCR**: Text extraction from PDF page images
+
+### **Database & Search Infrastructure** 🗄️
+- **Neo4j Aura**: Cloud-managed graph database (5,800+ nodes, 15,000+ relationships)
+- **Milvus Cloud**: Vector similarity search with multi-vector storage
+- **Zilliz**: Managed Milvus service for production-scale vector search
+- **Custom Graph Schema**: Optimized for biomedical research relationships
+
+### **Backend Services** ⚙️
+- **FastAPI**: High-performance async Python web framework  
+- **Pydantic**: Data validation and serialization
+- **Python 3.11+**: Modern Python with type hints and async support
+- **Custom Query Engine**: Hybrid graph + vector search capabilities
 
 **Frontend** 🎨  
 - **Next.js 14**: React-based web framework
@@ -100,65 +123,79 @@ graph TB
 - **Terraform**: Infrastructure as Code
 - **GitHub Actions**: CI/CD pipeline
 
-## � Quick Start
+## 🚀 **Quick Start**
 
-**BioNexus is cloud-ready!** You just need to set up cloud service credentials to get started.
+### **Prerequisites**
+- Docker & Docker Compose installed
+- Cloud service credentials (Neo4j Aura, Milvus Cloud)
 
-### Prerequisites
-- Docker & Docker Compose
-- Cloud service accounts (Neo4j Aura, Milvus Cloud, Google Cloud, OpenAI)
-
-### Setup Steps
-1. **Clone the repository**
+### **Setup Steps**
+1. **Clone and configure**
 ```bash
 git clone https://github.com/CypherKingdom/bionexus.git
 cd bionexus
+cp .env.example .env
+# Edit .env with your Neo4j Aura and Milvus Cloud credentials
 ```
 
-2. **Follow the complete setup guide**
+2. **Start the platform**
 ```bash
-# Read the detailed next steps
-cat NEXT_STEPS.md
-```
-
-3. **Quick deployment**
-```bash
-# After setting up .env with your credentials
 docker-compose up -d
 
-# Access at: http://localhost:3000
+# Wait for services to initialize (30-60 seconds)
+# Frontend: http://localhost:3000
+# API: http://localhost:8000/docs
 ```
 
-### Required Services
-- **Neo4j Aura** - Knowledge graph database
-- **Milvus Cloud** - Vector similarity search  
-- **Google Cloud Storage** - Document storage
-- **OpenAI API** - AI/ML services
+3. **Verify connection**
+```bash
+# Check backend health and database connections
+curl http://localhost:8000/health
 
-**📋 See `NEXT_STEPS.md` for detailed setup instructions**
+# View database statistics  
+curl http://localhost:8000/stats
+```
 
-## 💡 How It Works
+### **Required Cloud Services**
+- **Neo4j Aura**: Graph database with pre-loaded biomedical data
+- **Milvus Cloud (Zilliz)**: Vector search index for semantic similarity
+- **Environment Variables**: See `.env.example` for configuration
 
-1. **Upload Documents** - Drop your biomedical PDFs into the system
-2. **AI Processing** - Automatic OCR, NER, and entity extraction
-3. **Knowledge Graph** - Entities and relationships stored in Neo4j Aura
-4. **Vector Search** - Document embeddings indexed in Milvus Cloud
-5. **Intelligent Queries** - Ask questions and get AI-powered answers with citations
+**📋 See `NEXT_STEPS.md` for detailed cloud service setup**
 
-## 📊 Core Features
+## 💡 **How BioNexus Works**
 
-### API Endpoints
-- **Document Processing**: Upload and analyze biomedical papers
-- **Semantic Search**: Multi-modal similarity search across documents
-- **Knowledge Graph**: Explore entity relationships and connections
-- **RAG System**: Ask questions and get AI-generated answers with citations
-- **Export Tools**: Extract data in various formats for analysis
+**BioNexus is a read-only platform showcasing pre-processed NASA biomedical research data:**
 
-### Built-in Dashboards
-- **Pipeline Monitor**: Track document processing status
-- **Knowledge Graph Viewer**: Interactive entity relationship visualization  
-- **Search Interface**: Advanced query builder with filters
-- **Export System**: Data export in various formats
+1. **Explore Knowledge Graph** - Navigate 5,800+ publications through interactive graph visualization
+2. **Semantic Search** - Find relevant research using AI-powered vector similarity search  
+3. **Entity Discovery** - Explore 5,380+ genes, proteins, organisms, and methodologies
+4. **Relationship Analysis** - Discover connections between research concepts and entities
+5. **Visual Analytics** - Real-time statistics and insights from the research corpus
+
+**Note**: *The ingestion pipeline is available for study but the platform currently serves pre-processed data from NASA's biomedical research corpus.*
+
+## 📊 **Available Features**
+
+### **API Endpoints** (`http://localhost:8000/docs`)
+- **`/search/*`**: Semantic search across publications, pages, and entities
+- **`/graph/*`**: Knowledge graph exploration with advanced filtering
+- **`/export/*`**: Data export in JSON and CSV formats  
+- **`/health`**: Real-time database statistics and health monitoring
+- **`/stats`**: Dashboard metrics for publications, entities, and relationships
+
+### **Interactive Dashboards**
+- **Knowledge Graph Viewer**: Physics-based graph visualization with zoom, pan, and filtering
+- **Search Interface**: Multi-tier search across publications, pages, and entities
+- **Entity Explorer**: Browse genes, proteins, organisms, and methodologies
+- **Statistics Dashboard**: Real-time insights from Neo4j Aura and Milvus Cloud
+- **Export Tools**: Download research data in multiple formats
+
+### **Advanced Graph Features**
+- **Layout Algorithms**: Force-directed, circular, grid, and hierarchical layouts
+- **Interactive Filtering**: Filter by node types, relationships, and connectivity
+- **Real-time Physics**: Smooth animations and dynamic node positioning
+- **Multi-scale Visualization**: From corpus overview to individual entity details
 
 ### API Documentation
 Once running, visit `http://localhost:8000/docs` for interactive API documentation.

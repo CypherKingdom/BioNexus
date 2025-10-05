@@ -35,23 +35,23 @@ async def semantic_search(request: SemanticSearchRequest = None, query: str = No
         # Try multiple query patterns to find relevant data
         results = []
         
-        # First try: Look for Pages with ocr_text
+        # First try: Look for Pages with text content
         try:
             page_query = """
             MATCH (pg:Page)-[:PART_OF]->(p:Publication)
-            WHERE toLower(pg.ocr_text) CONTAINS toLower($query)
+            WHERE toLower(pg.text) CONTAINS toLower($query)
             OPTIONAL MATCH (e:Entity)-[:MENTIONED_IN]->(pg)
             RETURN DISTINCT 
                 pg.page_id as id,
                 pg.pub_id as pub_id,
-                p.title as title,
-                p.authors as authors,
-                pg.page_number as page_number,
-                pg.ocr_text as abstract,
+                COALESCE(p.title, 'Unknown Publication') as title,
+                COALESCE(p.authors, []) as authors,
+                COALESCE(pg.page_num, 1) as page_number,
+                pg.text as abstract,
                 1.0 as score,
-                collect(DISTINCT e.name)[0..5] as entities,
-                p.year as year
-            ORDER BY p.year DESC
+                [name IN collect(DISTINCT e.name)[0..5] | CASE WHEN name IS NOT NULL THEN name ELSE '' END] as entities,
+                COALESCE(p.year, 2024) as year
+            ORDER BY COALESCE(p.year, 2024) DESC
             LIMIT $top_k
             """
             results = neo4j_client.run_query(page_query, {
@@ -77,7 +77,7 @@ async def semantic_search(request: SemanticSearchRequest = None, query: str = No
                     1 as page_number,
                     COALESCE(p.abstract, 'No abstract available') as abstract,
                     0.9 as score,
-                    collect(DISTINCT e.name)[0..5] as entities,
+                    [name IN collect(DISTINCT e.name)[0..5] | CASE WHEN name IS NOT NULL THEN name ELSE '' END] as entities,
                     p.year as year
                 ORDER BY p.year DESC
                 LIMIT $top_k
@@ -96,6 +96,7 @@ async def semantic_search(request: SemanticSearchRequest = None, query: str = No
                 MATCH (e:Entity)
                 WHERE toLower(e.name) CONTAINS toLower($query)
                 OPTIONAL MATCH (e)-[:MENTIONED_IN]->(pg:Page)-[:PART_OF]->(p:Publication)
+                WITH e, pg, p
                 RETURN DISTINCT 
                     e.entity_id as id,
                     COALESCE(pg.pub_id, 'unknown') as pub_id,
@@ -117,33 +118,10 @@ async def semantic_search(request: SemanticSearchRequest = None, query: str = No
                 logger.warning(f"Entity search failed: {e}")
                 results = []
         
-        # If still no results, provide some mock examples for demonstration
+        # If no results found, return empty results - no fake data!
         if not results:
-            logger.info(f"No database results for query '{request.query}', providing sample data")
-            results = [
-                {
-                    "id": "sample_1",
-                    "pub_id": "nasa_sample_001",
-                    "title": f"Effects of {request.query.title()} on Cellular Function in Microgravity",
-                    "authors": ["Johnson, M.A.", "Smith, R.L.", "Davis, K.J."],
-                    "page_number": 1,
-                    "abstract": f"This study investigates the relationship between {request.query} and biological processes in space environments. Our findings demonstrate significant implications for long-duration space missions.",
-                    "score": 0.85,
-                    "entities": [request.query.title(), "Microgravity", "Cell Biology"],
-                    "year": 2023
-                },
-                {
-                    "id": "sample_2", 
-                    "pub_id": "nasa_sample_002",
-                    "title": f"Molecular Analysis of {request.query.title()} Response in Space",
-                    "authors": ["Lee, S.H.", "Wilson, P.T."],
-                    "page_number": 1,
-                    "abstract": f"Advanced molecular techniques reveal novel aspects of {request.query} behavior under space conditions. This research provides insights for future space exploration missions.",
-                    "score": 0.78,
-                    "entities": [request.query.title(), "Molecular Biology", "Space Research"],
-                    "year": 2022
-                }
-            ]
+            logger.info(f"No database results found for query '{request.query}'")
+            results = []
         
         # Format results to match frontend expectations
         formatted_results = []
@@ -163,14 +141,32 @@ async def semantic_search(request: SemanticSearchRequest = None, query: str = No
             else:
                 snippet = text[:200] + "..." if len(text) > 200 else text or "No content available"
             
+            # Clean entities to ensure they are strings
+            raw_entities = result.get('entities', []) or []
+            clean_entities = []
+            for entity in raw_entities:
+                if isinstance(entity, str) and entity.strip():
+                    clean_entities.append(entity.strip())
+                elif entity is not None:
+                    clean_entities.append(str(entity))
+            
+            # Clean authors array similarly
+            raw_authors = result.get('authors', []) or []
+            clean_authors = []
+            for author in raw_authors:
+                if isinstance(author, str) and author.strip():
+                    clean_authors.append(author.strip())
+                elif author is not None:
+                    clean_authors.append(str(author))
+            
             formatted_results.append({
                 "id": result.get('id', f"result_{i}"),
                 "title": result.get('title', 'Untitled Publication'),
-                "authors": result.get('authors', []) or [],
+                "authors": clean_authors,
                 "year": result.get('year'),
                 "abstract": snippet,
                 "score": result.get('score', 0.8),
-                "entities": result.get('entities', []) or [],
+                "entities": clean_entities,
                 "pub_id": result.get('pub_id', f"pub_{i}")
             })
         
@@ -240,18 +236,18 @@ async def boolean_search(
         
         cypher_query = f"""
         MATCH (pg:Page)-[:PART_OF]->(p:Publication)
-        WHERE pg.ocr_text CONTAINS $query
+        WHERE pg.text CONTAINS $query
         {where_clause}
         OPTIONAL MATCH (e:Entity)-[:MENTIONED_IN]->(pg)
         RETURN DISTINCT 
             pg.page_id as page_id,
             pg.pub_id as pub_id,
-            p.title as title,
-            p.authors as authors,
-            pg.page_number as page_number,
-            pg.ocr_text as text,
+            COALESCE(p.title, 'Unknown Publication') as title,
+            COALESCE(p.authors, []) as authors,
+            COALESCE(pg.page_num, 1) as page_number,
+            pg.text as text,
             1.0 as score
-        ORDER BY p.year DESC
+        ORDER BY COALESCE(p.year, 2024) DESC
         LIMIT $top_k
         """
         
@@ -299,7 +295,7 @@ async def boolean_search(
 
 
 @router.get("/suggestions")
-async def get_search_suggestions(query: str, limit: int = Query(5, ge=1, le=20)):
+async def get_search_suggestions(query: str = Query(..., alias="q"), limit: int = Query(5, ge=1, le=20)):
     """
     Get search suggestions based on entities and publication titles.
     """
@@ -332,15 +328,14 @@ async def get_search_suggestions(query: str, limit: int = Query(5, ge=1, le=20))
             {"query": query, "limit": limit // 2}
         )
         
-        # Combine and format suggestions
+        # Combine and format suggestions as simple strings for React compatibility
         suggestions = []
         
         for result in entity_results + pub_results:
-            suggestions.append({
-                "text": result['suggestion'],
-                "type": result['type'],
-                "score": 1.0  # Would calculate relevance score in production
-            })
+            # Return only the text string, not objects with {text, type, score}
+            suggestion_text = str(result.get('suggestion', ''))
+            if suggestion_text and suggestion_text not in suggestions:
+                suggestions.append(suggestion_text)
         
         return {
             "suggestions": suggestions[:limit],
@@ -437,7 +432,7 @@ async def get_search_stats():
             "total_publications": stats['publications'],
             "total_pages": stats['pages'],
             "total_entities": stats['entities'],
-            "search_index_size": milvus_client.get_collection_stats().get('row_count', 0)
+            "search_index_size": 0  # Milvus stats not available in current client
         }
         
     except Exception as e:
