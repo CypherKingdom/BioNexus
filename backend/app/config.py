@@ -15,17 +15,14 @@ class Settings(BaseSettings):
     workers: int = 4
     
     # Neo4j Aura (Cloud Knowledge Graph)
-    neo4j_uri: str = "neo4j+s://your-neo4j-instance.databases.neo4j.io"  # Neo4j Aura URI
-    neo4j_user: str = "neo4j"
-    neo4j_password: str = ""  # Set via environment variable
+    neo4j_uri: str = os.getenv("NEO4J_URI", "neo4j+s://your-neo4j-instance.databases.neo4j.io")
+    neo4j_user: str = os.getenv("NEO4J_USERNAME", "neo4j")
+    neo4j_password: str = os.getenv("NEO4J_PASSWORD", "")
     neo4j_database: str = "neo4j"
     
     # Milvus Cloud (Vector Database)
-    milvus_host: str = ""  # Milvus cloud endpoint
-    milvus_port: str = "19530"
-    milvus_user: str = ""  # Milvus cloud username
-    milvus_password: str = ""  # Milvus cloud password
-    milvus_secure: bool = True
+    milvus_uri: str = os.getenv("MILVUS_URI", "")
+    milvus_token: str = os.getenv("MILVUS_TOKEN", "")
     milvus_collection_name: str = "bionexus_embeddings"
     
     # Google Cloud Storage (Object Storage)
@@ -80,6 +77,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields in .env
 
 # Global settings instance
 settings = Settings()

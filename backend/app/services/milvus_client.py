@@ -26,15 +26,13 @@ class MilvusClient:
     """Milvus Cloud client for vector operations."""
     
     def __init__(self):
-        self.host = settings.milvus_host
-        self.port = settings.milvus_port
-        self.user = settings.milvus_user
-        self.password = settings.milvus_password
+        self.uri = settings.milvus_uri
+        self.token = settings.milvus_token
         self.collection_name = settings.milvus_collection_name
         self.collection = None
         self.connected = False
         
-        if MILVUS_AVAILABLE and self.host:
+        if MILVUS_AVAILABLE and self.uri:
             self.connect()
         else:
             logger.warning("Milvus not available or not configured - using mock client")
@@ -44,20 +42,18 @@ class MilvusClient:
         try:
             connections.connect(
                 alias="default",
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                secure=settings.milvus_secure
+                uri=self.uri,
+                token=self.token
             )
             
             # Create collection if it doesn't exist
             self._create_collection_if_not_exists()
             self.connected = True
-            logger.info(f"Connected to Milvus Cloud at {self.host}:{self.port}")
+            logger.info(f"Connected to Milvus Cloud at {self.uri}")
             
         except Exception as e:
             logger.error(f"Failed to connect to Milvus: {e}")
+            self.connected = False
             self.connected = False
 
     def _create_collection_if_not_exists(self):
@@ -346,7 +342,7 @@ class MockMilvusClient:
 
 
 # Initialize the appropriate client
-if MILVUS_AVAILABLE and settings.milvus_host:
+if MILVUS_AVAILABLE and settings.milvus_uri:
     milvus_client = MilvusClient()
 else:
     milvus_client = MockMilvusClient()

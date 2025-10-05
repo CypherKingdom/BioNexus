@@ -1,47 +1,35 @@
-# Core Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
+# BioNexus Backend Requirements
+# Tested and working with Python 3.13
 
-# Database (Read-Only)
-neo4j==5.15.0
-pymilvus==2.3.4
+# Core FastAPI Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
 
-# Basic ML for query processing
-numpy==1.24.3
-sentence-transformers==2.2.2
+# Database Clients (Read-Only Mode)
+neo4j>=5.15.0
+pymilvus>=2.3.4
 
-# HTTP and API
-httpx==0.25.2
-python-multipart==0.0.6
-aiofiles==23.2.1
+# Machine Learning & Embeddings
+numpy>=1.24.0
+sentence-transformers>=2.2.0
 
-# Data Processing (minimal for export)
-pandas==2.1.4
-google-cloud-secret-manager==2.17.0
-google-oauth2-tool==0.0.3
+# HTTP Client & File Handling
+httpx>=0.25.0
+python-multipart>=0.0.6
+aiofiles>=23.2.0
+aiohttp>=3.8.0
 
+# Configuration & Environment
+python-dotenv>=1.0.0
 
+# AI Services
+openai>=1.0.0
 
-# Configuration
-python-dotenv==1.0.0
+# Data Processing
+pandas>=2.0.0
 
-# Utilities
-Jinja2==3.1.2
-python-dateutil==2.8.2
-
-# Development
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-cov==4.1.0
-black==23.11.0
-isort==5.12.0
-flake8==6.1.0
-
-# Optional: Enhanced ColPali support
-# colpali-engine==0.2.0  # Uncomment if available
-
-# Optional: LangChain and OpenAI
-# langchain==0.0.350
-# openai==1.3.6
+# Template Engine & Utilities
+Jinja2>=3.1.0
+python-dateutil>=2.8.0

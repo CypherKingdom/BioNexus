@@ -14,6 +14,7 @@ class Neo4jClient:
         self.user = settings.neo4j_user
         self.password = settings.neo4j_password
         self.driver = None
+        self.connected = False
         self.connect()
 
     def connect(self):
@@ -25,8 +26,6 @@ class Neo4jClient:
                 self.driver = GraphDatabase.driver(
                     self.uri,
                     auth=(self.user, self.password),
-                    encrypted=True,
-                    trust=True,
                     max_connection_lifetime=30 * 60,  # 30 minutes
                     max_connection_pool_size=50,
                     connection_acquisition_timeout=60  # 60 seconds
@@ -43,9 +42,11 @@ class Neo4jClient:
                 result = session.run("RETURN 1 as test")
                 result.single()
                 
+            self.connected = True
             logger.info(f"Connected to Neo4j database at {self.uri}")
         except Exception as e:
             logger.error(f"Failed to connect to Neo4j: {e}")
+            self.connected = False
             # Don't raise in production - allow graceful degradation
             if settings.environment == "development":
                 raise
