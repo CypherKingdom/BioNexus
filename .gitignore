@@ -1,5 +1,4 @@
-# Development environment configuration
-.env
+# Development environment configuration (keeping .env for team sharing)
 .env.local
 .env.development
 .env.production
@@ -201,13 +200,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# Virtual environments only (keeping .env for team sharing)\n.venv\nenv/\nvenv/\nENV/\nenv.bak/\nvenv.bak/
 
 # Spyder project settings
 .spyderproject
