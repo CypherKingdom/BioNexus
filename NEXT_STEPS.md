@@ -1,18 +1,19 @@
-# 🚀 **BioNexus - NEXT STEPS**
-*Exact steps to get your research platform running perfectly*
+# 🚀 **BioNexus - Google Cloud Deployment**
+*Deploy your research platform to Google Cloud Run*
 
-## 📋 **STEP 1: Initial Setup**
+## 📋 **STEP 1: Deploy to Google Cloud**
 
-### Run the Setup Script
+### Single Command Deployment
 ```bash
 cd "/run/media/CypherKing/Local Disk/BioNexus"
-./setup.sh
+./deploy-gcp.sh
 ```
 
-**Choose your setup option:**
-- **Option 1**: Local development only (recommended for testing)
-- **Option 2**: Local + Azure AI (enhanced features)
-- **Option 3**: Full production (cloud deployment)
+**This will:**
+- Deploy backend to Google Cloud Run
+- Deploy frontend to Google Cloud Run  
+- Configure all environment variables
+- Set up custom domain (bionexus.study)
 
 ---
 
