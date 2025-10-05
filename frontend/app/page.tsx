@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { SearchIcon, BookOpenIcon, NetworkIcon, TrendingUpIcon, Zap, Database, Brain } from 'lucide-react'
+import { SearchIcon, BookOpenIcon, NetworkIcon, FileText, Zap, Database, Brain } from 'lucide-react'
 import Link from 'next/link'
 import { SearchBar } from '@/components/search/SearchBar'
 import { StatsCards } from '@/components/dashboard/StatsCards'
@@ -37,14 +37,14 @@ export default function HomePage() {
               <Link href="/graph" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
                 Knowledge Graph
               </Link>
-              <Link href="/mission-planner" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
-                Mission Planner
+              <Link href="/about" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
+                About
               </Link>
-              <Link href="/export" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
-                Export
+              <Link href="/methodology" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
+                Methodology
               </Link>
-              <Link href="/pipeline" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
-                Pipeline
+              <Link href="/contact" className="text-gray-600 hover:text-primary-700 font-medium transition-colors">
+                Contact
               </Link>
             </nav>
           </div>
@@ -60,7 +60,7 @@ export default function HomePage() {
             <span className="text-gradient block">Intelligence Pipeline</span>
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Complete AI-powered processing pipeline from PDF documents to mission planning. 
+            Complete AI-powered processing pipeline from PDF documents to knowledge discovery. 
             OCR extraction, multimodal embeddings, biomedical NER, and knowledge graph integration.
           </p>
           
@@ -80,39 +80,39 @@ export default function HomePage() {
           </div>
           
           {/* Quick Action Cards */}
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Link href="/search" className="card-hover group">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <Link href="/search" className="card-hover group hover-lift">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                  <SearchIcon className="w-6 h-6 text-primary-700" />
+                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-all duration-300 group-hover:scale-110">
+                  <SearchIcon className="w-6 h-6 text-primary-700 group-hover:text-primary-800" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-900">Semantic Search</h3>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Semantic Search</h3>
                   <p className="text-gray-600 text-sm">Find relevant research using natural language</p>
                 </div>
               </div>
             </Link>
             
-            <Link href="/graph" className="card-hover group">
+            <Link href="/graph" className="card-hover group hover-lift">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                  <NetworkIcon className="w-6 h-6 text-primary-700" />
+                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-all duration-300 group-hover:scale-110">
+                  <NetworkIcon className="w-6 h-6 text-primary-700 group-hover:text-primary-800" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-900">Knowledge Graph</h3>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Knowledge Graph</h3>
                   <p className="text-gray-600 text-sm">Explore connections between research concepts</p>
                 </div>
               </div>
             </Link>
             
-            <Link href="/mission-planner" className="card-hover group">
+            <Link href="/export" className="card-hover group hover-lift">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                  <TrendingUpIcon className="w-6 h-6 text-primary-700" />
+                <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-all duration-300 group-hover:scale-110">
+                  <FileText className="w-6 h-6 text-primary-700 group-hover:text-primary-800" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-semibold text-gray-900">Mission Planning</h3>
-                  <p className="text-gray-600 text-sm">Get research-based mission recommendations</p>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Data Export</h3>
+                  <p className="text-gray-600 text-sm">Export research data in multiple formats</p>
                 </div>
               </div>
             </Link>
@@ -203,7 +203,7 @@ export default function HomePage() {
                 <span className="font-bold">BioNexus</span>
               </div>
               <p className="text-gray-400 text-sm">
-                AI-powered knowledge graph platform for NASA bioscience research exploration and mission planning.
+                AI-powered knowledge graph platform for NASA bioscience research exploration and analysis.
               </p>
             </div>
             
@@ -212,7 +212,7 @@ export default function HomePage() {
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><Link href="/search" className="hover:text-white transition-colors">Search</Link></li>
                 <li><Link href="/graph" className="hover:text-white transition-colors">Knowledge Graph</Link></li>
-                <li><Link href="/mission-planner" className="hover:text-white transition-colors">Mission Planner</Link></li>
+
                 <li><Link href="/api/docs" className="hover:text-white transition-colors">API Documentation</Link></li>
               </ul>
             </div>

@@ -10,6 +10,147 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/explore")
+async def explore_graph(limit: int = 50):
+    """
+    Get nodes and relationships for graph exploration.
+    Returns data suitable for visualization.
+    """
+    try:
+        # Get nodes with their basic info
+        nodes_query = """
+        MATCH (n)
+        WHERE n:Publication OR n:Entity OR n:Page
+        RETURN 
+            id(n) as id,
+            labels(n)[0] as type,
+            CASE 
+                WHEN n:Publication THEN n.title
+                WHEN n:Entity THEN n.name
+                WHEN n:Page THEN 'Page ' + toString(n.page_number)
+                ELSE 'Unknown'
+            END as label,
+            properties(n) as properties
+        LIMIT $limit
+        """
+        
+        nodes_result = neo4j_client.run_query(nodes_query, {"limit": limit})
+        
+        # Get relationships between these nodes
+        relationships_query = """
+        MATCH (n)-[r]->(m)
+        WHERE (n:Publication OR n:Entity OR n:Page) AND (m:Publication OR m:Entity OR m:Page)
+        RETURN 
+            id(n) as source,
+            id(m) as target,
+            type(r) as type,
+            properties(r) as properties
+        LIMIT $limit
+        """
+        
+        relationships_result = neo4j_client.run_query(relationships_query, {"limit": limit})
+        
+        return {
+            "nodes": [
+                {
+                    "id": str(node["id"]),
+                    "label": node["label"] or "Unknown",
+                    "type": node["type"],
+                    "properties": node["properties"] or {}
+                }
+                for node in nodes_result
+            ],
+            "relationships": [
+                {
+                    "source": str(rel["source"]),
+                    "target": str(rel["target"]),
+                    "type": rel["type"],
+                    "properties": rel["properties"] or {}
+                }
+                for rel in relationships_result
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Graph exploration failed: {e}")
+        return {"nodes": [], "relationships": []}
+
+
+@router.get("/search")
+async def search_graph(query: str, limit: int = 30):
+    """
+    Search for nodes in the knowledge graph by name/title.
+    """
+    try:
+        # Search across different node types
+        search_query = """
+        MATCH (n)
+        WHERE (n:Publication AND toLower(n.title) CONTAINS toLower($query))
+           OR (n:Entity AND toLower(n.name) CONTAINS toLower($query))
+           OR (n:Page AND toLower(n.ocr_text) CONTAINS toLower($query))
+        WITH n
+        MATCH (n)-[r]-(connected)
+        RETURN 
+            id(n) as id,
+            labels(n)[0] as type,
+            CASE 
+                WHEN n:Publication THEN n.title
+                WHEN n:Entity THEN n.name
+                WHEN n:Page THEN 'Page ' + toString(n.page_number)
+                ELSE 'Unknown'
+            END as label,
+            properties(n) as properties,
+            id(connected) as connected_id,
+            labels(connected)[0] as connected_type,
+            type(r) as relationship_type
+        LIMIT $limit
+        """
+        
+        search_result = neo4j_client.run_query(search_query, {"query": query, "limit": limit})
+        
+        # Process results to get unique nodes and relationships
+        nodes = {}
+        relationships = []
+        
+        for result in search_result:
+            # Add main node
+            node_id = str(result["id"])
+            if node_id not in nodes:
+                nodes[node_id] = {
+                    "id": node_id,
+                    "label": result["label"] or "Unknown",
+                    "type": result["type"],
+                    "properties": result["properties"] or {}
+                }
+            
+            # Add connected node
+            connected_id = str(result["connected_id"])
+            if connected_id not in nodes:
+                nodes[connected_id] = {
+                    "id": connected_id,
+                    "label": "Connected Node",
+                    "type": result["connected_type"],
+                    "properties": {}
+                }
+            
+            # Add relationship
+            relationships.append({
+                "source": node_id,
+                "target": connected_id,
+                "type": result["relationship_type"],
+                "properties": {}
+            })
+        
+        return {
+            "nodes": list(nodes.values()),
+            "relationships": relationships
+        }
+        
+    except Exception as e:
+        logger.error(f"Graph search failed: {e}")
+        return {"nodes": [], "relationships": []}
+
+
 @router.get("/query", response_model=KGQueryResponse)
 async def execute_cypher_query(
     cypher_query: str,

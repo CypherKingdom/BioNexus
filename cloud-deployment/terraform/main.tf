@@ -28,7 +28,7 @@ variable "region" {
 variable "domain_name" {
   description = "Primary domain name"
   type        = string
-  default     = "bionexus.space"
+  default     = "bionexus.study"
 }
 
 variable "azure_subscription_id" {
@@ -107,6 +107,10 @@ resource "google_secret_manager_secret" "api_keys" {
     "meteomatics-username", 
     "meteomatics-password",
     "azure-cognitive-key",
+    "azure-text-endpoint",
+    "azure-text-key",
+    "azure-vision-endpoint",
+    "azure-vision-key",
     "neo4j-password",
     "neo4j-uri",
     "miro-api-key",
@@ -379,6 +383,46 @@ resource "google_cloud_run_service" "bionexus_backend" {
           value_from {
             secret_key_ref {
               name = google_secret_manager_secret.api_keys["huggingface-api-key"].secret_id
+              key  = "latest"
+            }
+          }
+        }
+        
+        env {
+          name = "AZURE_TEXT_ENDPOINT"
+          value_from {
+            secret_key_ref {
+              name = google_secret_manager_secret.api_keys["azure-text-endpoint"].secret_id
+              key  = "latest"
+            }
+          }
+        }
+        
+        env {
+          name = "AZURE_TEXT_KEY"
+          value_from {
+            secret_key_ref {
+              name = google_secret_manager_secret.api_keys["azure-text-key"].secret_id
+              key  = "latest"
+            }
+          }
+        }
+        
+        env {
+          name = "AZURE_VISION_ENDPOINT"
+          value_from {
+            secret_key_ref {
+              name = google_secret_manager_secret.api_keys["azure-vision-endpoint"].secret_id
+              key  = "latest"
+            }
+          }
+        }
+        
+        env {
+          name = "AZURE_VISION_KEY"
+          value_from {
+            secret_key_ref {
+              name = google_secret_manager_secret.api_keys["azure-vision-key"].secret_id
               key  = "latest"
             }
           }

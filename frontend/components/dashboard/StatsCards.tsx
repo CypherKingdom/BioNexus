@@ -20,19 +20,48 @@ export function StatsCards() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate API call - in real app, fetch from backend
     const fetchStats = async () => {
       try {
-        // Mock data - replace with actual API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setStats({
-          publications: 608,
-          pages: 15420,
-          entities: 8934,
-          searchIndexSize: 15420
-        })
+        // First try to get real data directly from backend
+        const backendResponse = await fetch('http://localhost:8000/stats')
+        if (backendResponse.ok) {
+          const backendData = await backendResponse.json()
+          setStats({
+            publications: backendData.publications || 0,
+            pages: backendData.pages || 0, 
+            entities: backendData.entities || 0,
+            searchIndexSize: backendData.searchIndexSize || 0
+          })
+        } else {
+          // Try Next.js API route as fallback
+          const apiResponse = await fetch('/api/stats')
+          if (apiResponse.ok) {
+            const apiData = await apiResponse.json()
+            setStats({
+              publications: apiData.publications || 0,
+              pages: apiData.pages || 0,
+              entities: apiData.entities || 0, 
+              searchIndexSize: apiData.searchIndexSize || 0
+            })
+          } else {
+            // Set to zero if no data available - NO FAKE NUMBERS
+            setStats({
+              publications: 0,
+              pages: 0,
+              entities: 0,
+              searchIndexSize: 0
+            })
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch stats:', error)
+        // Set to zero if error - NO FAKE NUMBERS
+        setStats({
+          publications: 0,
+          pages: 0,
+          entities: 0,
+          searchIndexSize: 0
+        })
       } finally {
         setLoading(false)
       }
@@ -94,14 +123,14 @@ export function StatsCards() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {statCards.map((card, index) => (
-        <div key={card.title} className="card hover:shadow-lg transition-all duration-200 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+        <div key={card.title} className="card hover:shadow-xl hover-lift transition-all duration-300 fade-in hover-glow" style={{ animationDelay: `${index * 150}ms` }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">{card.title}</p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{card.value}</p>
               <p className="text-xs text-gray-500 mt-1">{card.description}</p>
             </div>
-            <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center`}>
+            <div className={`w-12 h-12 ${card.color} rounded-lg flex items-center justify-center hover-zoom transition-transform duration-300`}>
               <card.icon className="w-6 h-6 text-white" />
             </div>
           </div>

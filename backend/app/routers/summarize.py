@@ -5,7 +5,7 @@ import openai
 import os
 from datetime import datetime
 
-from ..schemas import RAGRequest, RAGResponse, Citation, MissionPlannerRequest, MissionRecommendation
+from ..schemas import RAGRequest, RAGResponse, Citation
 from ..services.neo4j_client import neo4j_client
 from ..services.query_embeddings import query_embedding_service
 from ..services.milvus_client import milvus_client
@@ -67,47 +67,7 @@ async def generate_rag_summary(request: RAGRequest):
         raise HTTPException(status_code=500, detail=f"Summary generation failed: {e}")
 
 
-@router.post("/mission-planner", response_model=List[MissionRecommendation])
-async def mission_planner(request: MissionPlannerRequest):
-    """
-    Generate mission planning recommendations based on constraints and research goals.
-    """
-    try:
-        recommendations = []
-        
-        # Build query based on mission constraints
-        constraints_query = _build_constraints_query(request.constraints)
-        
-        # Search for relevant research
-        for goal in request.research_goals:
-            # Find relevant publications and evidence
-            evidence_passages = _get_passages_from_semantic_search(
-                f"{goal} {constraints_query}", 
-                top_k=10
-            )
-            
-            if evidence_passages:
-                # Generate recommendation
-                recommendation_text, citations, confidence = await _generate_mission_recommendation(
-                    goal, 
-                    request.constraints, 
-                    evidence_passages
-                )
-                
-                risk_level = _assess_risk_level(confidence, evidence_passages)
-                
-                recommendations.append(MissionRecommendation(
-                    recommendation=recommendation_text,
-                    confidence=confidence,
-                    supporting_evidence=citations,
-                    risk_level=risk_level
-                ))
-        
-        return recommendations
-        
-    except Exception as e:
-        logger.error(f"Mission planning failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Mission planning failed: {e}")
+
 
 
 @router.get("/publication/{pub_id}")
@@ -317,62 +277,7 @@ def _generate_fallback_answer(question: str, passages: List[dict]) -> str:
         return f"Based on the available evidence [1], the research indicates relevant information but requires further investigation."
 
 
-async def _generate_mission_recommendation(
-    goal: str, 
-    constraints, 
-    evidence_passages: List[dict]
-) -> tuple[str, List[Citation], float]:
-    """Generate mission-specific recommendation."""
-    try:
-        context_text = ""
-        for i, passage in enumerate(evidence_passages, 1):
-            context_text += f"[{i}] {passage['text']}\n\n"
-        
-        mission_prompt = f"""
-        Mission Goal: {goal}
-        Constraints: Duration: {getattr(constraints, 'duration_days', 'unspecified')} days, 
-        Radiation: {getattr(constraints, 'radiation_level', 'unspecified')}, 
-        Gravity: {getattr(constraints, 'gravity_level', 'unspecified')}
-        
-        Based on the research evidence, provide specific recommendations for this mission scenario.
-        """
-        
-        user_prompt = f"Context: {context_text}\nMission Planning Request: {mission_prompt}"
-        
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": RAG_SYSTEM_PROMPT},
-                    {"role": "user", "content": user_prompt}
-                ],
-                max_tokens=250,
-                temperature=0.2
-            )
-            
-            recommendation = response.choices[0].message.content
-            
-        except:
-            recommendation = f"Based on available research evidence [1], recommendations for {goal} should consider the mission constraints and available data."
-        
-        # Create citations
-        citations = []
-        for i, passage in enumerate(evidence_passages[:5], 1):
-            citations.append(Citation(
-                citation_id=i,
-                pub_id=passage['pub_id'],
-                page_id=passage['page_id'],
-                snippet=passage['text'][:150] + "..." if len(passage['text']) > 150 else passage['text'],
-                confidence=passage['score']
-            ))
-        
-        confidence = sum(c.confidence for c in citations) / len(citations) if citations else 0.3
-        
-        return recommendation, citations, confidence
-        
-    except Exception as e:
-        logger.error(f"Mission recommendation generation failed: {e}")
-        return "Unable to generate recommendation with current evidence.", [], 0.1
+
 
 
 async def _generate_publication_summary(publication: dict, full_text: str) -> tuple[str, List[str]]:

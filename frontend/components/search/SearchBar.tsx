@@ -41,18 +41,47 @@ export function SearchBar({
   // Fetch suggestions when value changes
   useEffect(() => {
     if (value.length > 2) {
-      // Simulate API call for suggestions
-      const mockSuggestions = [
-        'microgravity effects on cells',
-        'space radiation exposure',
-        'cardiovascular adaptation',
-        'bone density changes',
-        'plant growth in space'
-      ].filter(suggestion => 
-        suggestion.toLowerCase().includes(value.toLowerCase())
-      )
-      setSuggestions(mockSuggestions)
-      setShowSuggestions(true)
+      const fetchSuggestions = async () => {
+        try {
+          const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(value)}`)
+          if (response.ok) {
+            const data = await response.json()
+            setSuggestions(data.suggestions || [])
+            setShowSuggestions(true)
+          } else {
+            // Fallback to mock suggestions
+            const mockSuggestions = [
+              'microgravity effects on cells',
+              'space radiation exposure',
+              'cardiovascular adaptation',
+              'bone density changes',
+              'plant growth in space'
+            ].filter(suggestion => 
+              suggestion.toLowerCase().includes(value.toLowerCase())
+            )
+            setSuggestions(mockSuggestions)
+            setShowSuggestions(true)
+          }
+        } catch (error) {
+          console.error('Failed to fetch suggestions:', error)
+          // Use fallback suggestions on error
+          const mockSuggestions = [
+            'microgravity effects on cells',
+            'space radiation exposure',
+            'cardiovascular adaptation',
+            'bone density changes',
+            'plant growth in space'
+          ].filter(suggestion => 
+            suggestion.toLowerCase().includes(value.toLowerCase())
+          )
+          setSuggestions(mockSuggestions)
+          setShowSuggestions(true)
+        }
+      }
+
+      // Debounce the search
+      const timeoutId = setTimeout(fetchSuggestions, 300)
+      return () => clearTimeout(timeoutId)
     } else {
       setSuggestions([])
       setShowSuggestions(false)

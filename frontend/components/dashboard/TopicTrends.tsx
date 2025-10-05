@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { SimpleBarChart } from '@/components/charts/SimpleCharts'
 
 interface TopicData {
   topic: string
@@ -126,13 +127,15 @@ export function TopicTrends() {
       </div>
 
       {viewMode === 'chart' ? (
-        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <div className="text-center">
-            <div className="text-gray-400 mb-2">📊</div>
-            <p className="text-sm text-gray-600">Chart visualization available</p>
-            <p className="text-xs text-gray-500">Switch to List view for details</p>
-          </div>
-        </div>
+        <SimpleBarChart
+          data={topics.slice(0, 6).map(topic => ({
+            label: topic.topic.split(' ')[0],
+            value: topic.publications,
+            color: topic.trend === 'up' ? '#10b981' : topic.trend === 'down' ? '#ef4444' : '#6b7280'
+          }))}
+          title=""
+          height={240}
+        />
       ) : (
         <div className="space-y-3 max-h-64 overflow-y-auto scrollbar-thin">
           {topics.map((topic, index) => (

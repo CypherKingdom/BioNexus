@@ -67,15 +67,7 @@ export const ExportSystem: React.FC = () => {
       status: 'available',
       dataTypes: ['Species', 'Genes', 'Proteins', 'Conditions', 'Endpoints']
     },
-    {
-      id: 'mission-reports',
-      name: 'Mission Planning Reports',
-      description: 'Generated mission planning analysis and recommendations',
-      format: 'PDF / DOCX',
-      size: '23 MB',
-      status: 'generating',
-      dataTypes: ['Requirements', 'Risk Analysis', 'Recommendations']
-    },
+
     {
       id: 'api-endpoints',
       name: 'API Access Documentation',

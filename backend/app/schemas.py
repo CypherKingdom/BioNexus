@@ -141,20 +141,3 @@ class ExportRequest(BaseModel):
     pub_ids: Optional[List[str]] = None
 
 
-class MissionConstraint(BaseModel):
-    duration_days: Optional[int] = None
-    radiation_level: Optional[str] = None  # "low", "moderate", "high"
-    gravity_level: Optional[str] = None  # "zero", "partial", "full"
-    temperature_range: Optional[tuple[float, float]] = None
-
-
-class MissionPlannerRequest(BaseModel):
-    constraints: MissionConstraint
-    research_goals: List[str] = []
-
-
-class MissionRecommendation(BaseModel):
-    recommendation: str
-    confidence: float = Field(ge=0.0, le=1.0)
-    supporting_evidence: List[Citation]
-    risk_level: str  # "low", "moderate", "high"

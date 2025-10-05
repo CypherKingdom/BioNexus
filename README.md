@@ -158,7 +158,7 @@ docker-compose up -d
 - **Pipeline Monitor**: Track document processing status
 - **Knowledge Graph Viewer**: Interactive entity relationship visualization  
 - **Search Interface**: Advanced query builder with filters
-- **Mission Planner**: Research planning and recommendation system
+- **Export System**: Data export in various formats
 
 ### API Documentation
 Once running, visit `http://localhost:8000/docs` for interactive API documentation.

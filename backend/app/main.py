@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 import logging
 import os
 from pathlib import Path
+from datetime import datetime
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
@@ -20,7 +21,7 @@ from .exceptions import (
     validation_exception_handler,
     general_exception_handler
 )
-from .routers import search, graph, summarize, mission, export
+from .routers import search, graph, summarize, export, azure_ai
 # Skip integrations router temporarily - requires optional dependencies
 # from .routers import integrations
 from .services.neo4j_client import neo4j_client
@@ -60,7 +61,10 @@ app.include_router(graph.router, prefix="/kg", tags=["knowledge-graph"])
 app.include_router(summarize.router, prefix="/summarize", tags=["summarization"])
 # Skip integrations router temporarily - requires optional dependencies
 # app.include_router(integrations.router, prefix="/integrations", tags=["external-integrations"])
-app.include_router(mission.router, prefix="/mission", tags=["mission-planning"])
+
+# Azure AI services
+app.include_router(azure_ai.router, tags=["azure-ai"])
+
 app.include_router(export.router, prefix="/export", tags=["data-export"])
 
 
@@ -114,7 +118,7 @@ async def root():
             "knowledge_graph": "/kg/*",
             "summarization": "/summarize/*",
             "integrations": "/integrations/*",
-            "mission_planning": "/mission/*",
+
             "data_export": "/export/*",
             "documentation": "/docs"
         },
@@ -127,25 +131,122 @@ async def root():
 async def health_check():
     """Health check endpoint."""
     try:
-        # Test Neo4j connection
-        neo4j_result = neo4j_client.run_query("RETURN 1 as test")
-        neo4j_status = "healthy" if neo4j_result else "unhealthy"
+        # Get Neo4j stats
+        neo4j_stats = {}
+        try:
+            # Count nodes
+            node_result = neo4j_client.run_query("MATCH (n) RETURN count(n) as count")
+            neo4j_stats['node_count'] = node_result[0]['count'] if node_result else 0
+            
+            # Count publications
+            pub_result = neo4j_client.run_query("MATCH (p:Publication) RETURN count(p) as count")
+            neo4j_stats['publication_count'] = pub_result[0]['count'] if pub_result else 0
+            
+            # Count pages
+            page_result = neo4j_client.run_query("MATCH (pg:Page) RETURN count(pg) as count")
+            neo4j_stats['page_count'] = page_result[0]['count'] if page_result else 0
+            
+            # Count entities
+            entity_result = neo4j_client.run_query("MATCH (e:Entity) RETURN count(e) as count")
+            neo4j_stats['entity_count'] = entity_result[0]['count'] if entity_result else 0
+        except Exception as e:
+            logger.error(f"Neo4j stats error: {e}")
+            neo4j_stats = {'error': str(e)}
+        
+        # Get Milvus stats
+        milvus_stats = {}
+        try:
+            # Get collection info - use utility module
+            from pymilvus import utility
+            collections = utility.list_collections()
+            milvus_stats['collections'] = collections
+            if 'bionexus_embeddings' in collections:
+                from pymilvus import Collection
+                collection = Collection('bionexus_embeddings')
+                milvus_stats['vector_count'] = collection.num_entities
+        except Exception as e:
+            logger.error(f"Milvus stats error: {e}")
+            milvus_stats = {'error': str(e)}
         
         return {
             "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
             "services": {
-                "neo4j": neo4j_status,
+                "neo4j": "healthy",
+                "milvus": "healthy",
                 "api": "healthy"
             },
-            "timestamp": "2024-01-01T00:00:00Z"
+            "neo4j_stats": neo4j_stats,
+            "milvus_stats": milvus_stats
         }
-        
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return {
             "status": "unhealthy",
-            "error": str(e),
-            "timestamp": "2024-01-01T00:00:00Z"
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }
+
+
+@app.get("/debug/schema")
+async def debug_schema():
+    """Debug endpoint to see what's actually in the database."""
+    try:
+        # Get all node labels
+        labels_query = "CALL db.labels() YIELD label RETURN label"
+        labels = neo4j_client.run_query(labels_query)
+        
+        # Get sample nodes for each label
+        samples = {}
+        for label_row in labels[:5]:  # Limit to first 5 labels
+            label = label_row['label']
+            sample_query = f"MATCH (n:{label}) RETURN n LIMIT 3"
+            sample_nodes = neo4j_client.run_query(sample_query)
+            samples[label] = sample_nodes
+        
+        # Get relationship types
+        rel_query = "CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType"
+        relationships = neo4j_client.run_query(rel_query)
+        
+        return {
+            "node_labels": [l['label'] for l in labels],
+            "sample_nodes": samples,
+            "relationship_types": [r['relationshipType'] for r in relationships]
+        }
+    except Exception as e:
+        logger.error(f"Debug schema failed: {e}")
+        return {"error": str(e)}
+
+
+@app.get("/stats")
+async def get_stats():
+    """Get database statistics for dashboard."""
+    try:
+        # Get stats from health endpoint but format for frontend
+        health_data = await health_check()
+        
+        neo4j_stats = health_data.get('neo4j_stats', {})
+        milvus_stats = health_data.get('milvus_stats', {})
+        
+        return {
+            "publications": neo4j_stats.get('publication_count', 0),
+            "pages": neo4j_stats.get('page_count', 0),
+            "entities": neo4j_stats.get('entity_count', 0),
+            "searchIndexSize": milvus_stats.get('vector_count', 0),
+            "totalNodes": neo4j_stats.get('node_count', 0),
+            "lastUpdated": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Stats endpoint failed: {e}")
+        # Return zeros when data unavailable - NO FAKE DATA
+        return {
+            "publications": 0,
+            "pages": 0,
+            "entities": 0,
+            "searchIndexSize": 0,
+            "totalNodes": 0,
+            "lastUpdated": datetime.now().isoformat(),
+            "error": "Database unavailable - showing actual zeros"
         }
 
 

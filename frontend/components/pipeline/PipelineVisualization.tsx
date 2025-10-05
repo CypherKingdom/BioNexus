@@ -142,7 +142,7 @@ export const PipelineVisualization: React.FC = () => {
       details: [
         'Search and retrieval endpoints',
         'Knowledge graph querying',
-        'Mission planning algorithms',
+        'Research summarization APIs',
         'Export and integration APIs'
       ],
       color: 'bg-[#00b4d8] text-white'
@@ -156,7 +156,7 @@ export const PipelineVisualization: React.FC = () => {
       details: [
         'Interactive search interface',
         'Knowledge graph visualization',
-        'Mission planning dashboard',
+        'Research exploration dashboard',
         'Responsive design'
       ],
       color: 'bg-[#90e0ef] text-black'
@@ -171,7 +171,7 @@ export const PipelineVisualization: React.FC = () => {
         'Integrated search and discovery',
         'Research trend analysis',
         'Export capabilities',
-        'Mission planning tools'
+        'Knowledge graph visualization'
       ],
       color: 'bg-[#caf0f8] text-black'
     }
@@ -321,18 +321,18 @@ export const PipelineVisualization: React.FC = () => {
         ))}
       </Tabs>
 
-      {/* Mission Planner & Export Integration */}
+      {/* Research & Export Integration */}
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Network className="w-5 h-5 text-purple-600" />
-              Mission Planner Integration
+              Knowledge Discovery
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">
-              Leverages the complete pipeline to provide research-based mission planning recommendations.
+              Leverages the complete pipeline to provide research-based insights and discovery tools.
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
@@ -341,15 +341,15 @@ export const PipelineVisualization: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span>AI-powered recommendations</span>
+                <span>AI-powered research insights</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle className="w-4 h-4 text-green-500" />
-                <span>Risk assessment algorithms</span>
+                <span>Advanced semantic search</span>
               </div>
             </div>
-            <Button className="w-full mt-4" variant="outline">
-              Launch Mission Planner
+            <Button className="w-full mt-4" variant="outline" onClick={() => window.location.href = '/search'}>
+              Explore Research
             </Button>
           </CardContent>
         </Card>
@@ -379,7 +379,7 @@ export const PipelineVisualization: React.FC = () => {
                 <span>Research summaries</span>
               </div>
             </div>
-            <Button className="w-full mt-4" variant="outline">
+            <Button className="w-full mt-4" variant="outline" onClick={() => window.location.href = '/export'}>
               Access Export Tools
             </Button>
           </CardContent>

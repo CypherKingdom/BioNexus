@@ -72,15 +72,7 @@ async def get_export_formats():
                 "status": "available",
                 "data_types": ["Species", "Genes", "Proteins", "Conditions", "Endpoints"]
             },
-            {
-                "id": "mission-reports",
-                "name": "Mission Planning Reports",
-                "description": "Generated mission planning analysis and recommendations",
-                "format": "PDF / DOCX",
-                "estimated_size": "23 MB",
-                "status": "generating",
-                "data_types": ["Requirements", "Risk Analysis", "Recommendations"]
-            },
+
             {
                 "id": "api-documentation",
                 "name": "API Access Documentation",
