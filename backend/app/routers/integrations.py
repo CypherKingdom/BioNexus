@@ -4,10 +4,26 @@ from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
 import logging
 
-from ..services.meteomatics_service import MeteomaticsService
-from ..services.azure_ai_service import AzureAIService  
-from ..services.miro_service import MiroCollaborationService
 from ..services.neo4j_client import neo4j_client
+
+# Optional integrations - only import if dependencies are available
+try:
+    from ..services.meteomatics_service import MeteomaticsService
+    METEOMATICS_AVAILABLE = True
+except ImportError:
+    METEOMATICS_AVAILABLE = False
+
+try:
+    from ..services.azure_ai_service import AzureAIService
+    AZURE_AVAILABLE = True  
+except ImportError:
+    AZURE_AVAILABLE = False
+
+try:
+    from ..services.miro_service import MiroCollaborationService
+    MIRO_AVAILABLE = True
+except ImportError:
+    MIRO_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 

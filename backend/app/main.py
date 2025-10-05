@@ -4,6 +4,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 import logging
 import os
+from pathlib import Path
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+env_path = Path(__file__).parent.parent.parent / '.env'
+load_dotenv(env_path)
 
 from .config import settings
 from .logging_config import setup_logging, get_logger
@@ -14,7 +20,9 @@ from .exceptions import (
     validation_exception_handler,
     general_exception_handler
 )
-from .routers import search, graph, summarize, integrations, mission, export
+from .routers import search, graph, summarize, mission, export
+# Skip integrations router temporarily - requires optional dependencies
+# from .routers import integrations
 from .services.neo4j_client import neo4j_client
 from .services.milvus_client import milvus_client
 
@@ -50,7 +58,8 @@ app.add_exception_handler(Exception, general_exception_handler)
 app.include_router(search.router, prefix="/search", tags=["search"])
 app.include_router(graph.router, prefix="/kg", tags=["knowledge-graph"])
 app.include_router(summarize.router, prefix="/summarize", tags=["summarization"])
-app.include_router(integrations.router, prefix="/integrations", tags=["external-integrations"])
+# Skip integrations router temporarily - requires optional dependencies
+# app.include_router(integrations.router, prefix="/integrations", tags=["external-integrations"])
 app.include_router(mission.router, prefix="/mission", tags=["mission-planning"])
 app.include_router(export.router, prefix="/export", tags=["data-export"])
 
