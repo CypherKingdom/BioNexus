@@ -15,7 +15,7 @@
 
 ## 🚀 Overview
 
-BioNexus transforms biomedical publications into an intelligent, searchable knowledge graph using cloud-native AI services. Upload your research papers and instantly discover hidden connections, entities, and insights through advanced semantic search.
+BioNexus transforms biomedical publications into an intelligent, searchable knowledge graph using cloud-native AI services. Using 608 research papers, instantly discover hidden connections, entities, and insights through advanced semantic search.
 
 ### Key Features
 
@@ -58,7 +58,6 @@ graph TB
     H --> I[Next.js Frontend]
     I --> J[BioNexus Dashboard]
     
-    K[Mission Planner] --> H
     L[Export System] --> H
     
     M[Google Cloud Platform] --> F
