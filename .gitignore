@@ -1,9 +1,10 @@
-# Development environment configuration (keeping .env for team sharing)
+# Environment configuration
 .env.local
 .env.development
 .env.production
 .env.staging
 .env.test
+.env
 
 # Python virtual environments (cross-platform)
 venv/
