@@ -138,7 +138,6 @@ torch_cache/
 
 # Jupyter Notebooks
 .ipynb_checkpoints/
-*.ipynb
 
 # IDE and editor files (cross-platform)
 .vscode/
